@@ -1,0 +1,11 @@
+# Ignore node_modules folders in both frontend and backend directories
+/app/node_modules
+/server/node_modules
+
+# Ignore .env files in both frontend and backend directories
+/app/.env
+/server/.env
+
+# Optional: You can also add general ignore patterns for all node_modules and .env files
+# node_modules
+# .env

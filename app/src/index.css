@@ -1,0 +1,181 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 220 14% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 14% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 14% 10%;
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 14% 10%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 262 83% 58%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 262 83% 58%;
+    --radius: 0.625rem;
+    
+    --purple-50: 260 100% 98%;
+    --purple-100: 260 100% 95%;
+    --purple-200: 260 100% 90%;
+    --purple-300: 262 100% 82%;
+    --purple-400: 262 92% 68%;
+    --purple-500: 262 83% 58%;
+    --purple-600: 263 70% 50%;
+    --purple-700: 263 67% 42%;
+    --purple-800: 263 70% 34%;
+    --purple-900: 264 67% 28%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #ec4899 100%);
+  }
+  
+  .bg-gradient-purple {
+    background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+  }
+  
+  .glass {
+    @apply bg-white/80 backdrop-blur-xl border border-white/20;
+  }
+  
+  .glass-dark {
+    @apply bg-black/20 backdrop-blur-xl border border-white/10;
+  }
+  
+  .shadow-glow {
+    box-shadow: 0 0 40px -10px rgba(124, 58, 237, 0.3);
+  }
+  
+  .shadow-glow-lg {
+    box-shadow: 0 0 60px -15px rgba(124, 58, 237, 0.4);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Animation utilities */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px -5px rgba(124, 58, 237, 0.3); }
+  50% { box-shadow: 0 0 40px -5px rgba(124, 58, 237, 0.5); }
+}
+
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.animate-slide-in {
+  animation: slide-in 0.5s ease-out forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+/* Drag and drop styles */
+.dragging {
+  opacity: 0.5;
+  transform: scale(1.02);
+}
+
+.drag-over {
+  border: 2px dashed #7c3aed;
+  background: rgba(124, 58, 237, 0.05);
+}
+
+/* Form builder styles */
+.question-card {
+  @apply bg-white rounded-xl border border-gray-200 shadow-sm transition-all duration-200;
+}
+
+.question-card:hover {
+  @apply shadow-md border-purple-200;
+}
+
+.question-card.active {
+  @apply ring-2 ring-purple-500 border-purple-500;
+}
+
+/* Input focus styles */
+input:focus, textarea:focus, select:focus {
+  @apply outline-none ring-2 ring-purple-500/20 border-purple-500;
+}
+
+/* Button hover effects */
+.btn-magnetic {
+  @apply relative overflow-hidden transition-all duration-300;
+}
+
+.btn-magnetic::before {
+  content: '';
+  @apply absolute inset-0 bg-white/20 translate-y-full transition-transform duration-300;
+}
+
+.btn-magnetic:hover::before {
+  @apply translate-y-0;
+}
