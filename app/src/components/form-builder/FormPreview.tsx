@@ -1,8 +1,13 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Star, Upload
+import {
+  Star,
+  X,
+  Loader2,
+  FileText,
+  Upload
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { Form, Question } from '@/types/form';
+import { uploadFile } from '../../lib/api';
 
 interface FormPreviewProps {
   form: Form;
@@ -76,8 +82,8 @@ export function FormPreview({ form, onSubmit }: FormPreviewProps) {
             <motion.div
               className="h-full bg-purple-500 rounded-full"
               initial={{ width: 0 }}
-              animate={{ 
-                width: `${(Object.keys(answers).length / form.questions.length) * 100}%` 
+              animate={{
+                width: `${(Object.keys(answers).length / form.questions.length) * 100}%`
               }}
               transition={{ duration: 0.3 }}
             />
@@ -106,7 +112,7 @@ export function FormPreview({ form, onSubmit }: FormPreviewProps) {
         <div className="pt-6 border-t border-gray-200">
           <Button
             type="submit"
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg 
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg
                        font-medium transition-all duration-200 hover:shadow-lg hover:shadow-purple-500/25"
           >
             Submit
@@ -117,6 +123,10 @@ export function FormPreview({ form, onSubmit }: FormPreviewProps) {
   );
 }
 
+// ----------------------------------------------------------------------
+// CHILD COMPONENT
+// ----------------------------------------------------------------------
+
 interface QuestionPreviewProps {
   question: Question;
   value: any;
@@ -125,10 +135,51 @@ interface QuestionPreviewProps {
 }
 
 function QuestionPreview({ question, value, onChange, index }: QuestionPreviewProps) {
+  // === MOVED LOGIC HERE ===
+  // Each question gets its own independent upload state
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [localFileName, setLocalFileName] = useState<string | null>(null);
+
+  const handleFileSelect = async (file: File | undefined) => {
+    if (!file) return;
+
+    try {
+      setIsUploading(true);
+      // Upload to server
+      const response = await uploadFile(file); 
+      
+      // Update Parent with URL
+      onChange(response.url);
+      
+      // Update Local State for UI
+      setLocalFileName(file.name);
+      
+      toast.success("File uploaded successfully");
+    } catch (error) {
+      console.error("Upload failed", error);
+      toast.error(error.message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleRemoveFile = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setLocalFileName(null);
+    onChange(null); // Clear the answer in parent
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Determine what name to show (local state OR if value is already a URL string from DB)
+  const displayFileName = localFileName || (typeof value === 'string' ? value.split('/').pop() : null);
+
   return (
     <div className="bg-white rounded-lg p-6 border border-gray-100 shadow-sm">
       <div className="flex items-start gap-3 mb-4">
-        <span className="flex-shrink-0 w-6 h-6 bg-purple-100 text-purple-600 rounded-full 
+        <span className="flex-shrink-0 w-6 h-6 bg-purple-100 text-purple-600 rounded-full
                          flex items-center justify-center text-sm font-medium">
           {index}
         </span>
@@ -273,17 +324,62 @@ function QuestionPreview({ question, value, onChange, index }: QuestionPreviewPr
           </div>
         )}
 
+        {/* === FILE UPLOAD SECTION === */}
         {question.type === 'file_upload' && (
-          <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center 
-                          hover:border-purple-300 transition-colors cursor-pointer">
-            <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-            <p className="text-sm text-gray-500">Click to upload or drag and drop</p>
-            <Input
-              type="file"
-              className="hidden"
-              onChange={(e) => onChange(e.target.files?.[0])}
-              required={question.required}
-            />
+          <div className="space-y-2">
+            {/* If file is uploaded (either local state OR value prop exists) */}
+            {value ? (
+              <div className="flex items-center justify-between p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <FileText className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-900 truncate max-w-[200px]">
+                     {/* Show display name or just 'Attached File' */}
+                    {displayFileName || 'Attached File'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRemoveFile}
+                  className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            ) : (
+              /* If no file, show the upload dropzone */
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className={`
+                  border-2 border-dashed rounded-lg p-8 text-center transition-all cursor-pointer
+                  ${isUploading ? 'bg-gray-50 border-gray-300' : 'border-gray-200 hover:border-purple-400 hover:bg-purple-50'}
+                `}
+              >
+                {isUploading ? (
+                  <div className="flex flex-col items-center">
+                    <Loader2 className="w-8 h-8 text-purple-600 animate-spin mb-2" />
+                    <p className="text-sm text-gray-500">Uploading...</p>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500 font-medium">Click to upload document</p>
+                    <p className="text-xs text-gray-400 mt-1">PDF, DOC, Images up to 5MB</p>
+                  </>
+                )}
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  accept={question.acceptFileTypes || "*/*"}
+                  onChange={(e) => handleFileSelect(e.target.files?.[0])}
+                  disabled={isUploading}
+                  required={question.required && !value}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>

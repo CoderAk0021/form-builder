@@ -5,6 +5,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import { FormPreview } from '@/components/form-builder/FormPreview';
 import { useForms } from '@/hooks/useForms';
 import type { FormResponse } from '@/types/form';
+import {uploadFile} from '../lib/api'
 
 export function PublicForm() {
   const { formId } = useParams<{ formId: string }>();

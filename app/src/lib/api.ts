@@ -117,4 +117,24 @@ export const getFormById = async (formId: string) => {
   return handleResponse(response);
 };
 
+// File Upload
+
+export const uploadFile = async (file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${API_BASE_URL}/upload`, {
+    method: 'POST',
+    body: formData,
+    // Note: Do NOT set Content-Type header here; fetch sets it automatically for FormData
+  });
+
+  if (!response.ok) {
+    throw new Error('File upload failed');
+  }
+
+  return response.json(); // Returns { url: "...", filename: "..." }
+};
+
+
 export { ApiError };

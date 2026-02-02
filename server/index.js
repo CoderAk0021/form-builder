@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require('path');
 
 require('dotenv').config();
 
@@ -8,6 +9,8 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use('/uploads',express.static(path.join(__dirname,'uploads')));
+
 
 // MongoDB connection
 const MONGODB_URI = process.env.MONGODB_URI
@@ -18,8 +21,9 @@ mongoose.connect(MONGODB_URI)
 
         // Routes
         app.use('/api/forms', require('./routes/forms'));
-
-        // Health check
+  app.use('/api/upload',require('./routes/uploads'));
+        
+// Health check
         app.get('/api/health', (req, res) => {
           res.json({ status: 'ok', timestamp: new Date().toISOString() });
         });
