@@ -95,7 +95,7 @@ export const FormResponses = () => {
         <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <button 
-              onClick={() => navigate('/')}
+              onClick={() => navigate(-1)}
               className="flex items-center text-gray-600 hover:text-gray-900 mb-2 transition-colors"
             >
               <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard

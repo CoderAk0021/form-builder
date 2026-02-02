@@ -288,10 +288,10 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowShareDialog(true)}
-                className="hidden sm:flex gap-2"
+                className="sm:flex gap-2"
               >
                 <Share2 className="w-4 h-4" />
-                Share
+                <span className="hidden sm:inline">Share</span>
               </Button>
 
               <Button 

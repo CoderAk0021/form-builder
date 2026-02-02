@@ -18,7 +18,6 @@ export function GoogleVerification({ onVerified }: Props) {
       
       // Pass the RAW token to the parent
       onVerified(credentialResponse.credential, decoded.email);
-      toast.success(`Welcome, ${decoded.name}`);
     }
   };
 

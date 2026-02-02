@@ -136,5 +136,11 @@ export const uploadFile = async (file: File) => {
   return response.json(); // Returns { url: "...", filename: "..." }
 };
 
+export async function checkSubmissionStatus(formId: string, email: string) {
+  const response = await fetch(`${API_BASE_URL}/forms/${formId}/check-status?email=${encodeURIComponent(email)}`);
+  const data = await response.json();
+  return data.submitted; // Expected boolean from backend
+}
+
 
 export { ApiError };

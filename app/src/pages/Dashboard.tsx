@@ -45,7 +45,7 @@ import { useForms } from "@/hooks/useForms";
 import type { Form } from "@/types/form";
 import { DEFAULT_FORM } from "@/types/form";
 import { generateId } from "@/utils/id";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 
 interface DashboardProps {
   onEditForm: (form: Form) => void;
@@ -437,13 +437,18 @@ export function Dashboard({ onEditForm }: DashboardProps) {
                               asChild
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <button className="p-1 rounded hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button className="p-1 rounded hover:bg-gray-100 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
                                 <MoreVertical className="w-4 h-4 text-gray-400" />
                               </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
-                                onClick={() => navigate(`/form/${form._id}/responses`)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(
+                                    `/form/${form.id || form._id}/responses`,
+                                  );
+                                }}
                               >
                                 <BarChart2 className="w-4 h-4 mr-2" />
                                 Responses
@@ -492,7 +497,10 @@ export function Dashboard({ onEditForm }: DashboardProps) {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => navigate(`/form/${form._id}/responses`)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/form/${form.id || form._id}/responses`);
+                          }}
                         >
                           <BarChart2 className="w-4 h-4" />
                         </Button>
