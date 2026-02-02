@@ -51,6 +51,10 @@ const FormSettingsSchema = new mongoose.Schema({
     type: String,
     default: "Thank you for your response!",
   },
+  limitOneResponse: { 
+    type: Boolean, 
+    default: false 
+  },
   redirectUrl: String,
   theme: FormThemeSchema,
 });

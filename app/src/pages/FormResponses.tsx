@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import  { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, FileText } from 'lucide-react';
 import { getFormById, getFormResponses } from '../lib/api';
@@ -28,6 +28,8 @@ export const FormResponses = () => {
         ]);
         setForm(formData);
         setResponses(responsesData);
+        
+        
       } catch (err: any) {
         setError(err.message || "Failed to load responses");
       } finally {
@@ -42,12 +44,12 @@ export const FormResponses = () => {
     if (!form || !responses.length) return;
 
     // 1. Create Headers: ["Submission Date", "Question 1", "Question 2"...]
-    const headers = ['Submission Date', ...form.questions.map((q: any) => `"${q.title}"`)];
+    const headers = ['Submission Date','Email',...form.questions.map((q: any) => `"${q.title}"`)];
 
     // 2. Create Rows
     const rows = responses.map((response) => {
       const date = `"${new Date(response.submittedAt).toLocaleString()}"`;
-      
+      const respondentEmail = response.respondentEmail;
       const answers = form.questions.map((q: any) => {
         // FIND the answer in the array matching the question ID
         const answerObj = response.answers.find((a: any) => a.questionId === q.id);
@@ -59,7 +61,7 @@ export const FormResponses = () => {
         return `"${val}"`;
       });
 
-      return [date, ...answers].join(',');
+      return [date,respondentEmail,...answers].join(',');
     });
 
     // 3. Trigger Download
@@ -124,6 +126,9 @@ export const FormResponses = () => {
                   <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap bg-gray-50">
                     Submission Date
                   </th>
+                  <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap bg-gray-50">
+                    Email
+                  </th>
                   {/* Dynamic Headers */}
                   {form?.questions.map((q: any) => (
                     <th key={q.id} className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider min-w-[150px] bg-gray-50">
@@ -145,11 +150,15 @@ export const FormResponses = () => {
                       <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
                         {formatDate(response.submittedAt)}
                       </td>
+                      <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                        {response.respondentEmail}
+                      </td>
                       
                       {/* Dynamic Cells */}
                       {form.questions.map((q: any) => {
                         // FIX: Find the specific answer object in the array
                         const answerObj = response.answers.find((a: any) => a.questionId === q.id);
+                        
                         const answerValue = answerObj ? answerObj.value : null;
                         
                         // Handle array values (like checkboxes)

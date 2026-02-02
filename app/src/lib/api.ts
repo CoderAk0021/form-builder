@@ -89,7 +89,7 @@ export const formsApi = {
   
   submitResponse: async (
     id: string,
-    data: { answers: FormResponse['answers']; respondent?: FormResponse['respondent'] }
+    data: { answers: FormResponse['answers']; respondent?: string}
   ): Promise<FormResponse> => {
     const response = await fetchApi<any>(`/forms/${id}/responses`, {
       method: 'POST',

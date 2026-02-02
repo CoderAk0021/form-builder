@@ -5,7 +5,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import { FormPreview } from '@/components/form-builder/FormPreview';
 import { useForms } from '@/hooks/useForms';
 import type { FormResponse } from '@/types/form';
-import {uploadFile} from '../lib/api'
+
 
 export function PublicForm() {
   const { formId } = useParams<{ formId: string }>();
@@ -40,9 +40,11 @@ export function PublicForm() {
     }
   };
 
-  const handleSubmit = async (answers: Record<string, any>) => {
+  // Update the function signature to accept verifiedEmail
+const handleSubmit = async (answers: Record<string, any>, googleToken: string) => {
     if (!formId) return;
 
+    // Format answers for the backend
     const responseData: FormResponse['answers'] = Object.entries(answers).map(
       ([questionId, value]) => ({
         questionId,
@@ -50,9 +52,12 @@ export function PublicForm() {
       })
     );
 
-    await submitResponse(formId, { answers: responseData });
+    // Pass the email to the submit function
+    await submitResponse(formId, { 
+      answers: responseData, 
+      googleToken: googleToken 
+    });
   };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">

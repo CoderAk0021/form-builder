@@ -52,6 +52,7 @@ export interface FormSettings {
   confirmationMessage: string;
   redirectUrl?: string;
   theme: FormTheme;
+  limitOneResponse: boolean;
 }
 
 export interface FormTheme {
@@ -66,6 +67,7 @@ export interface FormResponse {
   formId: string;
   submittedAt: string;
   answers: Answer[];
+  googleToken: string;
   respondent?: {
     name?: string;
     email?: string;
@@ -137,6 +139,7 @@ export const DEFAULT_FORM: Form = {
     allowMultipleResponses: false,
     requireLogin: false,
     showProgressBar: true,
+    limitOneResponse: true,
     confirmationMessage: 'Thank you for your response!',
     theme: {
       primaryColor: '#7c3aed',

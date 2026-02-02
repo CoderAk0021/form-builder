@@ -23,15 +23,18 @@ import {
 } from '@/components/ui/select';
 import type { Form, Question } from '@/types/form';
 import { uploadFile } from '../../lib/api';
+import { GoogleVerification } from './GoogleVerification';
 
 interface FormPreviewProps {
   form: Form;
-  onSubmit?: (answers: Record<string, any>) => void;
+  onSubmit?: (answers: Record<string, any>,googleToken: Record<string, any>) => void;
 }
 
 export function FormPreview({ form, onSubmit }: FormPreviewProps) {
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [googleToken, setGoogleToken] = useState<string | null>(null);
+  const [displayEmail, setDisplayEmail] = useState<string | null>(null);
 
   const handleAnswerChange = (questionId: string, value: any) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
@@ -39,8 +42,12 @@ export function FormPreview({ form, onSubmit }: FormPreviewProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+   if (form.settings.limitOneResponse && !googleToken) {
+      toast.error("Please sign in first.");
+      return;
+    }
     if (onSubmit) {
-      onSubmit(answers);
+       onSubmit(answers,googleToken);
     }
     setSubmitted(true);
   };
@@ -94,6 +101,23 @@ export function FormPreview({ form, onSubmit }: FormPreviewProps) {
         </div>
       )}
 
+      {/* Verification Block */}
+       {form.settings.limitOneResponse && !googleToken && (
+         <GoogleVerification 
+           onVerified={(token, email) => {
+             setGoogleToken(token);
+             setDisplayEmail(email);
+           }} 
+         />
+       )}
+
+       {/* Show "Signed in as..." if verified */}
+       {googleToken && (
+         <div className="p-4 bg-green-50 text-green-700 rounded mb-6">
+           Verify successful. responding as <strong>{displayEmail}</strong>
+         </div>
+       )}
+
       {/* Questions */}
       <div className="space-y-6">
         {form.questions.map((question, index) => (
@@ -112,10 +136,11 @@ export function FormPreview({ form, onSubmit }: FormPreviewProps) {
         <div className="pt-6 border-t border-gray-200">
           <Button
             type="submit"
+            disabled={form.settings.limitOneResponse && !googleToken}
             className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg
                        font-medium transition-all duration-200 hover:shadow-lg hover:shadow-purple-500/25"
           >
-            Submit
+            {form.settings.limitOneResponse && !googleToken ? "Verify Email to Submit" : "Submit"}
           </Button>
         </div>
       )}
