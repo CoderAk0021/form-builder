@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import type {Variants} from 'framer-motion';
 import { 
   Type, 
   AlignLeft, 
@@ -119,7 +120,7 @@ const containerVariants = {
   },
 };
 
-const itemVariants = {
+const itemVariants : Variants = {
   hidden: { opacity: 0, y: 10 },
   visible: { 
     opacity: 1, 
@@ -151,7 +152,7 @@ export function QuestionTypesPanel({ onAddQuestion }: QuestionTypesPanelProps) {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="flex-1 space-y-6 overflow-y-scroll"
+        className="flex-1 space-y-6 "
       >
         {typeCategories.map((category) => (
           <div key={category.title} className="space-y-3">

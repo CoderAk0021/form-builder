@@ -2,23 +2,11 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  ArrowLeft, 
-  Download, 
-  FileText, 
-  BarChart3, 
-  Users, 
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  Search,
-  Filter,
-  MoreHorizontal,
-  TrendingUp,
-  Clock,
-  Mail,
-  Hash
+  ArrowLeft, Download, FileText, BarChart3, Users, 
+  Calendar, ChevronLeft, ChevronRight, Search, Clock, 
 } from 'lucide-react';
-import { getFormById, getFormResponses } from '../lib/api';
+// 1. CHANGE: Import the secure formsApi instead of the raw functions
+import { formsApi } from '../lib/api'; 
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
@@ -51,32 +39,43 @@ export const FormResponses = () => {
       try {
         if (!id) return;
         setLoading(true);
+        
+        // 2. CHANGE: Use formsApi. This ensures cookies are sent.
         const [formData, responsesData] = await Promise.all([
-          getFormById(id),
-          getFormResponses(id)
+          formsApi.getById(id),
+          formsApi.getResponses(id)
         ]);
+        
         setForm(formData);
         setResponses(responsesData);
       } catch (err: any) {
+        console.error("Fetch error:", err);
         setError(err.message || "Failed to load responses");
+        
+        // Optional: If error is auth related, redirect to login
+        if (err.message === "User Need to Login" || err.status === 401) {
+             navigate('/login');
+        }
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [id]);
+  }, [id, navigate]);
 
-  // Filter responses based on search
-  const filteredResponses = responses.filter(response => {
+  // Safe check to ensure responses is an array before filtering
+  // This prevents crashes if the API returns an error object unexpectedly
+  const safeResponses = Array.isArray(responses) ? responses : [];
+
+  const filteredResponses = safeResponses.filter(response => {
     const searchLower = searchQuery.toLowerCase();
     const matchesEmail = response.respondentEmail?.toLowerCase().includes(searchLower);
-    const matchesContent = response.answers.some((a: any) => 
+    const matchesContent = response.answers?.some((a: any) => 
       String(a.value).toLowerCase().includes(searchLower)
     );
     return matchesEmail || matchesContent;
   });
 
-  // Pagination
   const totalPages = Math.ceil(filteredResponses.length / itemsPerPage);
   const paginatedResponses = filteredResponses.slice(
     (currentPage - 1) * itemsPerPage,
@@ -89,7 +88,7 @@ export const FormResponses = () => {
     const headers = ['Submission Date','Email',...form.questions.map((q: any) => `"${q.title}"`)];
     const rows = responses.map((response) => {
       const date = `"${new Date(response.submittedAt).toLocaleString()}"`;
-      const respondentEmail = response.respondentEmail;
+      const respondentEmail = response.respondentEmail || 'Anonymous';
       const answers = form.questions.map((q: any) => {
         const answerObj = response.answers.find((a: any) => a.questionId === q.id);
         let val = answerObj ? answerObj.value : '';
@@ -111,34 +110,28 @@ export const FormResponses = () => {
     document.body.removeChild(link);
   };
 
-  // Calculate stats
   const stats = {
-    total: responses.length,
-    today: responses.filter(r => {
+    total: safeResponses.length,
+    today: safeResponses.filter(r => {
       const date = new Date(r.submittedAt);
       const now = new Date();
       return date.toDateString() === now.toDateString();
     }).length,
-    thisWeek: responses.filter(r => {
+    thisWeek: safeResponses.filter(r => {
       const date = new Date(r.submittedAt);
       const now = new Date();
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       return date >= weekAgo;
     }).length,
-    uniqueEmails: new Set(responses.map(r => r.respondentEmail)).size
+    uniqueEmails: new Set(safeResponses.map(r => r.respondentEmail)).size
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-900/20 via-[#0a0a0f] to-[#0a0a0f]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl animate-pulse" />
-        
+      <div className="min-h-screen bg-[#0f0f12] flex items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-900/20 via-[#0f0f12] to-[#0f0f12]" />
         <div className="relative flex flex-col items-center gap-4">
-          <div className="relative">
-            <div className="w-12 h-12 border-2 border-white/5 rounded-full" />
-            <div className="absolute inset-0 w-12 h-12 border-2 border-t-indigo-500 border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin" />
-          </div>
+          <div className="w-12 h-12 border-2 border-white/5 border-t-indigo-500 rounded-full animate-spin" />
           <p className="text-sm text-white/40 font-medium tracking-wider uppercase">Loading Analytics</p>
         </div>
       </div>
@@ -147,25 +140,27 @@ export const FormResponses = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-950/20 via-[#0a0a0f] to-[#0a0a0f]" />
+      <div className="min-h-screen bg-[#0f0f12] flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="relative bg-white/[0.02] backdrop-blur-xl border border-red-500/20 rounded-2xl p-8 max-w-md w-full text-center"
+          className="bg-white/[0.02] border border-red-500/20 rounded-2xl p-8 max-w-md w-full text-center"
         >
           <div className="w-14 h-14 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/20">
             <BarChart3 className="w-7 h-7 text-red-400" />
           </div>
           <h2 className="text-xl font-bold text-white mb-2">Failed to Load</h2>
-          <p className="text-white/40">{error}</p>
+          <p className="text-white/40 mb-4">{error}</p>
+          <button onClick={() => navigate('/dashboard')} className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-colors">
+            Return to Dashboard
+          </button>
         </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white relative overflow-hidden">
+    <div className="min-h-screen bg-[#0f0f12] text-white relative overflow-hidden">
       {/* Background Effects */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[150px]" />
@@ -175,12 +170,12 @@ export const FormResponses = () => {
 
       <div className="relative z-10">
         {/* Header */}
-        <header className="border-b border-white/5 bg-[#0a0a0f]/80 backdrop-blur-xl sticky top-0 z-50">
+        <header className="border-b border-white/5 bg-[#0f0f12]/80 backdrop-blur-xl sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <div className="flex items-center gap-4">
                 <button 
-                  onClick={() => navigate(-1)}
+                  onClick={() => navigate('/dashboard')}
                   className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors"
                 >
                   <ArrowLeft className="w-5 h-5" />
@@ -225,10 +220,6 @@ export const FormResponses = () => {
                   <div>
                     <p className="text-sm text-white/40 mb-1">{stat.label}</p>
                     <p className="text-2xl font-bold text-white">{stat.value}</p>
-                    <p className={`text-xs text-${stat.color}-400 mt-1 flex items-center gap-1`}>
-                      <TrendingUp className="w-3 h-3" />
-                      {stat.trend}
-                    </p>
                   </div>
                   <div className={`w-10 h-10 rounded-xl bg-${stat.color}-500/10 border border-${stat.color}-500/20 flex items-center justify-center`}>
                     <stat.icon className={`w-5 h-5 text-${stat.color}-400`} />
@@ -238,7 +229,7 @@ export const FormResponses = () => {
             ))}
           </div>
 
-          {/* Toolbar */}
+          {/* Search & Filter Bar */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
               <h2 className="text-lg font-semibold text-white">Responses</h2>
@@ -247,21 +238,15 @@ export const FormResponses = () => {
               </span>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="relative">
+            <div className="relative">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
                 <input
                   type="text"
                   placeholder="Search responses..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-full text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 w-full sm:w-64"
+                  className="pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-full text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-indigo-500/50 w-full sm:w-64"
                 />
-              </div>
-              
-              <button className="p-2 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-colors">
-                <Filter className="w-4 h-4" />
-              </button>
             </div>
           </div>
 
@@ -271,90 +256,49 @@ export const FormResponses = () => {
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-white/5 bg-white/[0.02]">
-                    <th className="px-6 py-4 text-xs font-medium text-white/40 uppercase tracking-wider whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-3.5 h-3.5" />
-                        Date
-                      </div>
-                    </th>
-                    <th className="px-6 py-4 text-xs font-medium text-white/40 uppercase tracking-wider whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-3.5 h-3.5" />
-                        Respondent
-                      </div>
-                    </th>
-                    {form?.questions.map((q: any, idx: number) => (
+                    <th className="px-6 py-4 text-xs font-medium text-white/40 uppercase tracking-wider whitespace-nowrap">Date</th>
+                    <th className="px-6 py-4 text-xs font-medium text-white/40 uppercase tracking-wider whitespace-nowrap">Respondent</th>
+                    {form?.questions.map((q: any) => (
                       <th key={q.id} className="px-6 py-4 text-xs font-medium text-white/40 uppercase tracking-wider min-w-[200px]">
-                        <div className="flex items-center gap-2">
-                          <Hash className="w-3.5 h-3.5" />
-                          <span className="truncate max-w-[150px]">{q.title}</span>
-                        </div>
+                        <span className="truncate block max-w-[150px]">{q.title}</span>
                       </th>
                     ))}
-                    <th className="px-6 py-4 text-xs font-medium text-white/40 uppercase tracking-wider w-10"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   <AnimatePresence>
                     {paginatedResponses.length === 0 ? (
                       <tr>
-                        <td colSpan={form.questions.length + 3} className="px-6 py-16 text-center">
-                          <div className="flex flex-col items-center">
-                            <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-4">
-                              <FileText className="w-8 h-8 text-white/20" />
-                            </div>
-                            <p className="text-white/40 font-medium mb-1">No responses found</p>
-                            <p className="text-white/20 text-sm">Responses will appear here once submitted</p>
-                          </div>
+                        <td colSpan={form.questions.length + 2} className="px-6 py-16 text-center">
+                          <p className="text-white/40">No responses found</p>
                         </td>
                       </tr>
                     ) : (
                       paginatedResponses.map((response, idx) => (
                         <motion.tr 
-                          key={response._id}
+                          // 3. CHANGE: Use response.id if available, fallback to _id
+                          key={response.id || response._id}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: idx * 0.05 }}
-                          className="hover:bg-white/[0.02] transition-colors group"
+                          className="hover:bg-white/[0.02] transition-colors"
                         >
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-3">
-                              <div className="w-2 h-2 rounded-full bg-emerald-400/50" />
-                              <span className="text-sm text-white/60 font-mono">
-                                {formatDate(response.submittedAt)}
-                              </span>
-                            </div>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-white/60 font-mono">
+                            {formatDate(response.submittedAt)}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500/20 to-cyan-500/20 border border-indigo-500/30 flex items-center justify-center text-xs font-medium text-indigo-300">
-                                {response.respondentEmail?.charAt(0).toUpperCase() || '?'}
-                              </div>
-                              <span className="text-sm text-white/80 truncate max-w-[150px]">
-                                {response.respondentEmail || 'Anonymous'}
-                              </span>
-                            </div>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-white/80">
+                             {response.respondentEmail || 'Anonymous'}
                           </td>
                           {form.questions.map((q: any) => {
-                            const answerObj = response.answers.find((a: any) => a.questionId === q.id);
-                            const answerValue = answerObj ? answerObj.value : null;
-                            const displayValue = Array.isArray(answerValue) 
-                              ? answerValue.join(', ') 
-                              : (answerValue || '-');
-
+                            const answerObj = response.answers?.find((a: any) => a.questionId === q.id);
+                            const val = answerObj ? answerObj.value : '-';
+                            const display = Array.isArray(val) ? val.join(', ') : val;
                             return (
-                              <td key={q.id} className="px-6 py-4">
-                                <span className="text-sm text-white/70 line-clamp-2 max-w-[200px]">
-                                  {displayValue}
-                                </span>
+                              <td key={q.id} className="px-6 py-4 text-sm text-white/70">
+                                <span className="line-clamp-2">{display}</span>
                               </td>
                             );
                           })}
-                          <td className="px-6 py-4">
-                            <button className="p-1.5 rounded-lg hover:bg-white/10 text-white/20 hover:text-white/60 opacity-0 group-hover:opacity-100 transition-all">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </button>
-                          </td>
                         </motion.tr>
                       ))
                     )}
@@ -362,32 +306,25 @@ export const FormResponses = () => {
                 </tbody>
               </table>
             </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
+            
+            {/* Pagination Controls */}
+             {totalPages > 1 && (
               <div className="border-t border-white/5 px-6 py-4 flex items-center justify-between">
-                <p className="text-sm text-white/40">
-                  Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredResponses.length)} of {filteredResponses.length} responses
-                </p>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="p-2 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <span className="text-sm text-white/60 px-2">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <button
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                    className="p-2 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-lg bg-white/5 text-white/60 hover:text-white disabled:opacity-30"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="text-sm text-white/60">Page {currentPage} of {totalPages}</span>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-lg bg-white/5 text-white/60 hover:text-white disabled:opacity-30"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
             )}
           </div>

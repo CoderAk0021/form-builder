@@ -1,6 +1,7 @@
 # Ignore node_modules folders in both frontend and backend directories
 /app/node_modules
 /server/node_modules
+/utilities.txt
 
 # Ignore .env files in both frontend and backend directories
 /app/.env

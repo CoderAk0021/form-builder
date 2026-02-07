@@ -1,13 +1,19 @@
 const router = require('express').Router();
 const jwt = require('jsonwebtoken');
+const {checkCookies} = require('../middlewares/auth.middleware')
 
 
-router.post("/admin",  (req,res) => {
+router.post("/admin/login",  (req,res) => {
     try {
        const { username,password } = req.body;  
        if(username === process.env.USER && password === process.env.PASS) {
-         const token =  jwt.sign({ username:username, password: password },'jsonsecretkey123');
-         console.log('Token: ',token);
+         const token =  jwt.sign({ username:username, password: password },process.env.JWT_SECRET_KEY);
+          res.cookie("token", token, {
+          httpOnly: true,
+          maxAge: 60 * 60 * 1000,
+          sameSite: "Strict",
+          secure: true,
+        });
         return res.status(200).json({
             success : true,
             message : 'Welcome Admin'
@@ -24,5 +30,13 @@ router.post("/admin",  (req,res) => {
         })
     }
 })
+
+router.get("/verify", checkCookies, (req, res) => {
+  return res.status(200).json({ 
+    success: true, 
+    user: req.user 
+  });
+});
+
 
 module.exports = router

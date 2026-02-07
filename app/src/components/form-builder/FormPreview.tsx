@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import type { Variants } from "framer-motion";
 import {
   Star,
   X,
@@ -48,7 +49,7 @@ const containerVariants = {
   },
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
@@ -152,7 +153,10 @@ export function FormPreview({ form, onSubmit }: FormPreviewProps) {
         >
           <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-xl animate-pulse" />
           <div className="relative w-full h-full bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-full flex items-center justify-center shadow-2xl shadow-emerald-500/25">
-            <CheckCircle2 className="w-10 h-10 md:w-12 md:h-12 text-white" strokeWidth={2.5} />
+            <CheckCircle2
+              className="w-10 h-10 md:w-12 md:h-12 text-white"
+              strokeWidth={2.5}
+            />
           </div>
         </motion.div>
 
@@ -189,7 +193,10 @@ export function FormPreview({ form, onSubmit }: FormPreviewProps) {
 
         <div className="relative text-center">
           <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-red-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-red-500/20 rotate-3 hover:rotate-0 transition-transform duration-300">
-            <AlertCircle className="w-8 h-8 md:w-10 md:h-10 text-white" strokeWidth={2.5} />
+            <AlertCircle
+              className="w-8 h-8 md:w-10 md:h-10 text-white"
+              strokeWidth={2.5}
+            />
           </div>
 
           <h2 className="text-xl md:text-2xl font-bold text-white mb-3">
@@ -227,7 +234,28 @@ export function FormPreview({ form, onSubmit }: FormPreviewProps) {
         animate="visible"
         className="relative max-w-3xl mx-auto px-4 py-8 md:py-12 space-y-6 md:space-y-8"
       >
+        {/* Form Header Info */}
+        <div className="mb-0">
+          <motion.h1
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="text-2xl sm:text-3xl font-bold text-white mb-2 leading-tight"
+          >
+            {form.title}
+          </motion.h1>
 
+          {form.description && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="text-white/50 leading-relaxed"
+            >
+              {form.description}
+            </motion.p>
+          )}
+        </div>
         {/* Progress Bar */}
         {form.settings.showProgressBar && form.questions.length > 0 && (
           <motion.div variants={itemVariants} className="space-y-3 px-1">

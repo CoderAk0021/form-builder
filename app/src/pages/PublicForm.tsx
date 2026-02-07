@@ -1,16 +1,11 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useParams } from 'react-router-dom';
 import { 
-  Loader2, 
   AlertCircle, 
   ShieldCheck, 
-  Terminal, 
-  Lock, 
   Fingerprint,
   Cpu,
-  Wifi,
-  CheckCircle2,
   ArrowRight
 } from 'lucide-react';
 import { FormPreview } from '@/components/form-builder/FormPreview';
@@ -256,29 +251,6 @@ export function PublicForm() {
 
             {/* Form Content */}
             <div className="relative p-6 sm:p-10">
-              {/* Form Header Info */}
-              <div className="mb-0">
-                <motion.h1 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="text-2xl sm:text-3xl font-bold text-white mb-2 leading-tight"
-                >
-                  {form.title}
-                </motion.h1>
-                
-                {form.description && (
-                  <motion.p 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5 }}
-                    className="text-white/50 leading-relaxed"
-                  >
-                    {form.description}
-                  </motion.p>
-                )}
-              </div>
-
               {/* Divider */}
               <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mt-4" />
 

@@ -17,7 +17,6 @@ import {
   List,
   Plus,
   X,
-  Settings2,
   Eye
 } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
@@ -35,7 +34,6 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import type { Question, QuestionType, QuestionOption } from '@/types/form';
-import { QUESTION_TYPE_LABELS } from '@/types/form';
 
 const iconMap: Record<QuestionType, React.ElementType> = {
   short_text: Type,

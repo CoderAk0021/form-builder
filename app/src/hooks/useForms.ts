@@ -14,7 +14,7 @@ interface UseFormsReturn {
   getForm: (id: string) => Promise<Form | null>;
   submitResponse: (
     id: string,
-    data: { answers: FormResponse['answers']; respondent?: FormResponse['respondent'] }
+    data: { answers: FormResponse['answers']; googleToken?: string }
   ) => Promise<FormResponse | null>;
   getResponses: (id: string) => Promise<FormResponse[]>;
 }
@@ -98,7 +98,7 @@ export function useForms(): UseFormsReturn {
   const submitResponse = useCallback(
     async (
       id: string,
-      data: { answers: FormResponse['answers']; respondent?: FormResponse['respondent'] }
+      data: { answers: FormResponse['answers']; googleToken?: string }
     ) => {
       try {
         const response = await formsApi.submitResponse(id, data);

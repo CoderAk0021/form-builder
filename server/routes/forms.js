@@ -3,9 +3,10 @@ const router = express.Router();
 const Form = require("../models/Form");
 const Response = require("../models/Response");
 const { verifyGoogleToken } = require("../utils/googleAuth.ts");
+const {checkCookies} = require("../middlewares/auth.middleware.js")
 
 // Get all forms
-router.get("/", async (req, res) => {
+router.get("/",checkCookies, async (req, res) => {
   try {
     const forms = await Form.find().sort({ createdAt: -1 });
     res.json(forms);
@@ -15,7 +16,7 @@ router.get("/", async (req, res) => {
 });
 
 // Get a single form
-router.get("/:id", async (req, res) => {
+router.get("/:id",checkCookies, async (req, res) => {
   try {
     const form = await Form.findById(req.params.id);
     if (!form) {
@@ -28,7 +29,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // Create a new form
-router.post("/", async (req, res) => {
+router.post("/",checkCookies, async (req, res) => {
   try {
     const form = new Form(req.body);
     const savedForm = await form.save();
@@ -39,7 +40,7 @@ router.post("/", async (req, res) => {
 });
 
 // Update a form
-router.put("/:id", async (req, res) => {
+router.put("/:id",checkCookies, async (req, res) => {
   try {
     const form = await Form.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
@@ -55,7 +56,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // Delete a form
-router.delete("/:id", async (req, res) => {
+router.delete("/:id",checkCookies, async (req, res) => {
   try {
     const form = await Form.findByIdAndDelete(req.params.id);
     if (!form) {
@@ -70,7 +71,7 @@ router.delete("/:id", async (req, res) => {
 });
 
 // Get responses for a form
-router.get("/:id/responses", async (req, res) => {
+router.get("/:id/responses",checkCookies, async (req, res) => {
   try {
     const responses = await Response.find({ formId: req.params.id }).sort({
       submittedAt: -1,

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Plus,
   FileText,
@@ -7,17 +7,13 @@ import {
   BarChart2,
   Trash2,
   Edit3,
-  ExternalLink,
   MoreVertical,
   Search,
   LayoutGrid,
   List,
-  Loader2,
   Sparkles,
   Clock,
   Users,
-  ArrowUpRight,
-  Zap,
   Globe,
   TrendingUp,
   Command,
@@ -27,7 +23,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -732,7 +727,7 @@ export function Dashboard({ onEditForm }: DashboardProps) {
                           <Clock className="w-3.5 h-3.5" />
                           <span className="tabular-nums">
                             {new Date(
-                              form.updatedAt || Date.now(),
+                              form.updatedAt,
                             ).toLocaleDateString(undefined, {
                               month: "short",
                               day: "numeric",
