@@ -70,7 +70,7 @@ router.delete("/:id", async (req, res) => {
 });
 
 // Get responses for a form
-router.get("/:id/responses", async (req, res) => {
+router.get("/:id/responses",async (req, res) => {
   try {
     const responses = await Response.find({ formId: req.params.id }).sort({
       submittedAt: -1,

@@ -1,9 +1,24 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  GripVertical, Trash2, Copy, MoreVertical, 
-  CircleDot, CheckSquare, Star, Calendar, 
-  Mail, Hash, Upload, Type, AlignLeft, List
+  GripVertical, 
+  Trash2, 
+  Copy, 
+  MoreVertical, 
+  CircleDot, 
+  CheckSquare, 
+  Star, 
+  Calendar, 
+  Mail, 
+  Hash, 
+  Upload, 
+  Type, 
+  AlignLeft, 
+  List,
+  Plus,
+  X,
+  Settings2,
+  Eye
 } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -17,6 +32,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import type { Question, QuestionType, QuestionOption } from '@/types/form';
 import { QUESTION_TYPE_LABELS } from '@/types/form';
@@ -32,6 +48,32 @@ const iconMap: Record<QuestionType, React.ElementType> = {
   email: Mail,
   number: Hash,
   file_upload: Upload,
+};
+
+const iconColors: Record<QuestionType, string> = {
+  short_text: 'text-blue-400',
+  long_text: 'text-indigo-400',
+  multiple_choice: 'text-purple-400',
+  checkbox: 'text-pink-400',
+  dropdown: 'text-cyan-400',
+  rating: 'text-amber-400',
+  date: 'text-emerald-400',
+  email: 'text-rose-400',
+  number: 'text-orange-400',
+  file_upload: 'text-violet-400',
+};
+
+const iconBgColors: Record<QuestionType, string> = {
+  short_text: 'bg-blue-500/10 border-blue-500/20',
+  long_text: 'bg-indigo-500/10 border-indigo-500/20',
+  multiple_choice: 'bg-purple-500/10 border-purple-500/20',
+  checkbox: 'bg-pink-500/10 border-pink-500/20',
+  dropdown: 'bg-cyan-500/10 border-cyan-500/20',
+  rating: 'bg-amber-500/10 border-amber-500/20',
+  date: 'bg-emerald-500/10 border-emerald-500/20',
+  email: 'bg-rose-500/10 border-rose-500/20',
+  number: 'bg-orange-500/10 border-orange-500/20',
+  file_upload: 'bg-violet-500/10 border-violet-500/20',
 };
 
 interface QuestionCardProps {
@@ -100,195 +142,290 @@ export function QuestionCard({
       layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className={`question-card relative ${isActive ? 'active' : ''} ${isDragging ? 'dragging' : ''}`}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className={`relative group ${isDragging ? 'z-50' : 'z-0'}`}
       onClick={onClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="p-3 sm:p-4 lg:p-6">
-        {/* Header with drag handle and actions */}
-        <div className="flex items-start gap-2 sm:gap-3 mb-3 sm:mb-4">
-          <button
-            {...attributes}
-            {...listeners}
-            className={`mt-1.5 sm:mt-2 p-1 rounded hover:bg-gray-100 cursor-grab active:cursor-grabbing transition-opacity flex-shrink-0 ${
-              isHovered || isActive ? 'opacity-100' : 'opacity-0'
-            }`}
-          >
-            <GripVertical className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-          </button>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-              <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-500 flex-shrink-0" />
-              <span className="text-[10px] sm:text-xs font-medium text-purple-600 uppercase tracking-wide truncate">
-                {QUESTION_TYPE_LABELS[question.type]}
-              </span>
-            </div>
-
-            <Input
-              value={question.title}
-              onChange={(e) => onUpdate({ title: e.target.value })}
-              placeholder="Question title"
-              className="text-base sm:text-lg font-semibold border-0 border-b border-transparent hover:border-gray-200 
-                         focus:border-purple-500 focus:ring-0 px-0 bg-transparent transition-colors"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-
-          <div className={`flex items-center gap-1 transition-opacity flex-shrink-0 ${isHovered || isActive ? 'opacity-100' : 'opacity-0'}`}>
-            <div className="hidden sm:flex items-center gap-2 mr-2 lg:mr-4">
-              <Switch
-                id={`required-${question.id}`}
-                checked={question.required}
-                onCheckedChange={(checked) => onUpdate({ required: checked })}
-                onClick={(e) => e.stopPropagation()}
-              />
-              <Label
-                htmlFor={`required-${question.id}`}
-                className="text-xs sm:text-sm text-gray-500 cursor-pointer whitespace-nowrap"
-                onClick={(e) => e.stopPropagation()}
-              >
-                Required
-              </Label>
-            </div>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8">
-                  <MoreVertical className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDuplicate(); }}>
-                  <Copy className="w-4 h-4 mr-2" />
-                  Duplicate
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                  className="text-red-600 focus:text-red-600"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-
-        {/* Mobile Required Toggle */}
-        <div className="sm:hidden flex items-center gap-2 mb-3 ml-6">
-          <Switch
-            id={`required-mobile-${question.id}`}
-            checked={question.required}
-            onCheckedChange={(checked) => onUpdate({ required: checked })}
-            onClick={(e) => e.stopPropagation()}
-          />
-          <Label
-            htmlFor={`required-mobile-${question.id}`}
-            className="text-xs text-gray-500 cursor-pointer"
-            onClick={(e) => e.stopPropagation()}
-          >
-            Required
-          </Label>
-        </div>
-
-        {/* Description */}
-        {(isActive || question.description) && (
-          <Textarea
-            value={question.description || ''}
-            onChange={(e) => onUpdate({ description: e.target.value })}
-            placeholder="Add a description (optional)"
-            className="mt-2 text-xs sm:text-sm border-0 border-b border-transparent hover:border-gray-200 
-                       focus:border-purple-500 focus:ring-0 px-0 bg-transparent resize-none transition-colors"
-            rows={1}
-            onClick={(e) => e.stopPropagation()}
+      {/* Glow Effect on Active */}
+      <AnimatePresence>
+        {isActive && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-cyan-500/20 rounded-2xl blur-sm"
           />
         )}
+      </AnimatePresence>
 
-        {/* Question type specific inputs */}
-        <div className="mt-3 sm:mt-4" onClick={(e) => e.stopPropagation()}>
-          {(question.type === 'short_text' || question.type === 'email' || question.type === 'number') && (
-            <Input
-              placeholder={question.placeholder || 'Short answer text'}
-              disabled
-              className="bg-gray-50 border-gray-200 text-gray-400 text-sm"
+      {/* Main Card */}
+      <div 
+        className={`relative rounded-2xl border transition-all duration-300 overflow-hidden ${
+          isActive 
+            ? 'bg-white/[0.04] border-indigo-500/30 shadow-lg shadow-indigo-500/10' 
+            : 'bg-white/[0.02] border-white/[0.08] hover:border-white/[0.12] hover:bg-white/[0.03]'
+        } ${isDragging ? 'opacity-50 rotate-2 scale-105' : ''}`}
+      >
+        {/* Top Accent Line */}
+        <div className={`h-[2px] w-full bg-gradient-to-r from-transparent via-${iconColors[question.type].split('-')[1]}-500/50 to-transparent transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0'}`} />
+
+        <div className="p-5 sm:p-6">
+          {/* Header */}
+          <div className="flex items-start gap-4 mb-4">
+            {/* Drag Handle */}
+            <button
+              {...attributes}
+              {...listeners}
+              className={`mt-2 p-2 rounded-lg cursor-grab active:cursor-grabbing transition-all flex-shrink-0 ${
+                isHovered || isActive 
+                  ? 'opacity-100 bg-white/5 hover:bg-white/10' 
+                  : 'opacity-0'
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <GripVertical className="w-5 h-5 text-white/40" />
+            </button>
+
+            {/* Icon & Type Badge */}
+            <div className={`w-10 h-10 rounded-xl ${iconBgColors[question.type]} border flex items-center justify-center flex-shrink-0`}>
+              <Icon className={`w-5 h-5 ${iconColors[question.type]}`} />
+            </div>
+
+            {/* Title Input */}
+            <div className="flex-1 min-w-0 pt-1">
+              <Input
+                value={question.title}
+                onChange={(e) => onUpdate({ title: e.target.value })}
+                placeholder="Untitled Question"
+                className="text-lg font-semibold bg-transparent border-0 border-b border-transparent hover:border-white/10 focus:border-indigo-500/50 focus:ring-0 px-0 text-white placeholder:text-white/20 transition-all"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+
+            {/* Actions */}
+            <div className={`flex items-center gap-2 transition-all duration-200 ${isHovered || isActive ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2'}`}>
+              {/* Required Toggle - Desktop */}
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
+                <Switch
+                  id={`required-${question.id}`}
+                  checked={question.required}
+                  onCheckedChange={(checked) => onUpdate({ required: checked })}
+                  onClick={(e) => e.stopPropagation()}
+                  className="data-[state=checked]:bg-indigo-500"
+                />
+                <Label
+                  htmlFor={`required-${question.id}`}
+                  className={`text-xs font-medium cursor-pointer whitespace-nowrap ${question.required ? 'text-indigo-400' : 'text-white/40'}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Required
+                </Label>
+              </div>
+
+              {/* More Actions */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                  <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white border border-white/10">
+                    <MoreVertical className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 bg-[#0f0f14] border-white/10 text-white">
+                  <DropdownMenuItem 
+                    onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
+                    className="hover:bg-white/5 focus:bg-white/5 cursor-pointer"
+                  >
+                    <Copy className="w-4 h-4 mr-2 text-white/60" />
+                    Duplicate
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={(e) => { e.stopPropagation(); }}
+                    className="hover:bg-white/5 focus:bg-white/5 cursor-pointer"
+                  >
+                    <Eye className="w-4 h-4 mr-2 text-white/60" />
+                    Preview
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-white/10" />
+                  <DropdownMenuItem
+                    onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                    className="text-red-400 hover:bg-red-500/10 focus:bg-red-500/10 focus:text-red-400 cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+
+          {/* Mobile Required Toggle */}
+          <div className="sm:hidden flex items-center gap-3 mb-4 ml-14">
+            <Switch
+              id={`required-mobile-${question.id}`}
+              checked={question.required}
+              onCheckedChange={(checked) => onUpdate({ required: checked })}
+              onClick={(e) => e.stopPropagation()}
+              className="data-[state=checked]:bg-indigo-500"
             />
-          )}
+            <Label
+              htmlFor={`required-mobile-${question.id}`}
+              className={`text-xs font-medium cursor-pointer ${question.required ? 'text-indigo-400' : 'text-white/40'}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              Required
+            </Label>
+          </div>
 
-          {question.type === 'long_text' && (
-            <Textarea
-              placeholder={question.placeholder || 'Long answer text'}
-              disabled
-              className="bg-gray-50 border-gray-200 text-gray-400 resize-none text-sm"
-              rows={2}
-            />
-          )}
-
-          {(question.type === 'multiple_choice' || question.type === 'checkbox' || question.type === 'dropdown') && (
-            <div className="space-y-1.5 sm:space-y-2">
-              {question.options?.map((option, index) => (
-                <div key={option.id} className="flex items-center gap-2 sm:gap-3">
-                  {question.type === 'multiple_choice' && (
-                    <CircleDot className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-300 flex-shrink-0" />
-                  )}
-                  {question.type === 'checkbox' && (
-                    <CheckSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-300 flex-shrink-0" />
-                  )}
-                  {question.type === 'dropdown' && (
-                    <span className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center text-[10px] sm:text-xs text-gray-400 flex-shrink-0">
-                      {index + 1}
-                    </span>
-                  )}
-                  <Input
-                    value={option.label}
-                    onChange={(e) => handleUpdateOption(option.id, e.target.value)}
-                    className="flex-1 text-xs sm:text-sm border-0 border-b border-transparent hover:border-gray-200 
-                               focus:border-purple-500 focus:ring-0 px-0 bg-transparent transition-colors"
-                  />
-                  {question.options && question.options.length > 1 && (
-                    <button
-                      onClick={() => handleDeleteOption(option.id)}
-                      className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    </button>
-                  )}
-                </div>
-              ))}
-              <button
-                onClick={handleAddOption}
-                className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-purple-600 hover:text-purple-700 
-                           font-medium transition-colors"
+          {/* Description */}
+          <AnimatePresence>
+            {(isActive || question.description) && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="ml-14 mb-4"
               >
-                <span className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex items-center justify-center">+</span>
-                Add option
-              </button>
-            </div>
-          )}
+                <Textarea
+                  value={question.description || ''}
+                  onChange={(e) => onUpdate({ description: e.target.value })}
+                  placeholder="Add a description or help text..."
+                  className="text-sm bg-transparent border-0 border-b border-transparent hover:border-white/10 focus:border-indigo-500/50 focus:ring-0 px-0 text-white/60 placeholder:text-white/30 resize-none min-h-[40px]"
+                  rows={1}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          {question.type === 'rating' && (
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              {[...Array(question.maxRating || 5)].map((_, i) => (
-                <Star key={i} className="w-5 h-5 sm:w-6 sm:h-6 text-gray-300" />
-              ))}
-            </div>
-          )}
+          {/* Question Preview/Editor */}
+          <div className="ml-14" onClick={(e) => e.stopPropagation()}>
+            {/* Short Text */}
+            {(question.type === 'short_text' || question.type === 'email' || question.type === 'number') && (
+              <div className="relative">
+                <Input
+                  placeholder={question.placeholder || 'Short answer text'}
+                  disabled
+                  className="bg-white/5 border-white/10 text-white/40 text-sm rounded-xl h-11 cursor-not-allowed"
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <span className="text-[10px] text-white/20 uppercase tracking-wider font-mono">Input</span>
+                </div>
+              </div>
+            )}
 
-          {question.type === 'date' && (
-            <div className="flex items-center gap-2 text-gray-400">
-              <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="text-xs sm:text-sm">MM / DD / YYYY</span>
-            </div>
-          )}
+            {/* Long Text */}
+            {question.type === 'long_text' && (
+              <div className="relative">
+                <Textarea
+                  placeholder={question.placeholder || 'Long answer text'}
+                  disabled
+                  className="bg-white/5 border-white/10 text-white/40 resize-none text-sm rounded-xl min-h-[80px] cursor-not-allowed"
+                />
+                <div className="absolute bottom-3 right-3">
+                  <span className="text-[10px] text-white/20 uppercase tracking-wider font-mono">Textarea</span>
+                </div>
+              </div>
+            )}
 
-          {question.type === 'file_upload' && (
-            <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 sm:p-8 text-center">
-              <Upload className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-xs sm:text-sm text-gray-500">Click to upload or drag and drop</p>
-            </div>
-          )}
+            {/* Choice Types */}
+            {(question.type === 'multiple_choice' || question.type === 'checkbox' || question.type === 'dropdown') && (
+              <div className="space-y-2">
+                {question.options?.map((option, index) => (
+                  <motion.div 
+                    key={option.id} 
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="flex items-center gap-3 group/option"
+                  >
+                    {question.type === 'multiple_choice' && (
+                      <div className="w-4 h-4 rounded-full border border-white/20 flex items-center justify-center">
+                        <div className="w-2 h-2 rounded-full bg-white/10" />
+                      </div>
+                    )}
+                    {question.type === 'checkbox' && (
+                      <div className="w-4 h-4 rounded border border-white/20 flex items-center justify-center">
+                        <CheckSquare className="w-3 h-3 text-white/20" />
+                      </div>
+                    )}
+                    {question.type === 'dropdown' && (
+                      <span className="w-6 h-6 flex items-center justify-center text-xs text-white/30 font-mono">
+                        {index + 1}
+                      </span>
+                    )}
+                    <Input
+                      value={option.label}
+                      onChange={(e) => handleUpdateOption(option.id, e.target.value)}
+                      className="flex-1 text-sm bg-transparent border-0 border-b border-transparent hover:border-white/10 focus:border-indigo-500/50 focus:ring-0 px-0 text-white/80 transition-all"
+                    />
+                    {question.options && question.options.length > 1 && (
+                      <button
+                        onClick={() => handleDeleteOption(option.id)}
+                        className="p-1.5 rounded-lg opacity-0 group-hover/option:opacity-100 hover:bg-red-500/10 text-white/20 hover:text-red-400 transition-all"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </motion.div>
+                ))}
+                <button
+                  onClick={handleAddOption}
+                  className="flex items-center gap-2 mt-3 text-sm text-indigo-400 hover:text-indigo-300 font-medium transition-colors group"
+                >
+                  <div className="w-6 h-6 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center group-hover:bg-indigo-500/20 transition-colors">
+                    <Plus className="w-4 h-4" />
+                  </div>
+                  Add option
+                </button>
+              </div>
+            )}
+
+            {/* Rating */}
+            {question.type === 'rating' && (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  {[...Array(question.maxRating || 5)].map((_, i) => (
+                    <Star 
+                      key={i} 
+                      className={`w-8 h-8 ${i < 3 ? 'text-amber-400 fill-amber-400' : 'text-white/10'}`} 
+                    />
+                  ))}
+                </div>
+                <div className="h-6 w-px bg-white/10 mx-2" />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-white/40">Max:</span>
+                  <input
+                    type="number"
+                    value={question.maxRating || 5}
+                    onChange={(e) => onUpdate({ maxRating: parseInt(e.target.value) })}
+                    className="w-16 bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-sm text-white text-center focus:border-amber-500/50 focus:outline-none"
+                    min={1}
+                    max={10}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Date */}
+            {question.type === 'date' && (
+              <div className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-xl">
+                <Calendar className="w-5 h-5 text-emerald-400" />
+                <span className="text-sm text-white/40">MM / DD / YYYY</span>
+              </div>
+            )}
+
+            {/* File Upload */}
+            {question.type === 'file_upload' && (
+              <div className="border-2 border-dashed border-white/10 rounded-xl p-8 text-center hover:border-violet-500/30 hover:bg-violet-500/5 transition-all group cursor-pointer">
+                <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Upload className="w-6 h-6 text-violet-400" />
+                </div>
+                <p className="text-sm text-white/40">Click to upload or drag and drop</p>
+                <p className="text-xs text-white/20 mt-1">PDF, DOC, Images up to 5MB</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </motion.div>
