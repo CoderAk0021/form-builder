@@ -469,12 +469,12 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
                       Add Question
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="bottom" className="h-[70vh] bg-[#0f0f14] border-white/10 p-0 rounded-t-2xl">
+                  <SheetContent side="bottom" className="h-[70vh] bg-[#0f0f14] border-white/10 p-0 rounded-t-2xl overflow-y-auto">
                      <div className="p-6">
                       <SheetHeader className="mb-4 text-left">
                         <SheetTitle className="text-white">Select Question Type</SheetTitle>
                       </SheetHeader>
-                      <QuestionTypesPanel onAddQuestion={handleAddQuestion} />
+                        <QuestionTypesPanel onAddQuestion={handleAddQuestion} />
                     </div>
                   </SheetContent>
                 </Sheet>

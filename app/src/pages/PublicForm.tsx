@@ -237,29 +237,6 @@ export function PublicForm() {
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="max-w-2xl mx-auto"
         >
-          {/* Security Header */}
-          <div className="flex items-center justify-between mb-6 px-2">
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className="flex items-center gap-2 text-xs font-mono text-indigo-400/70 bg-indigo-500/10 border border-indigo-500/20 rounded-full px-3 py-1.5"
-            >
-              <Lock className="w-3 h-3" />
-              <span>TLS 1.3 ENCRYPTED</span>
-            </motion.div>
-            
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-              className="flex items-center gap-2 text-xs font-mono text-emerald-400/70 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-3 py-1.5"
-            >
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>LIVE</span>
-            </motion.div>
-          </div>
-
           {/* Main Form Container */}
           <motion.div
             initial={{ opacity: 0, scale: 0.98 }}
@@ -280,19 +257,7 @@ export function PublicForm() {
             {/* Form Content */}
             <div className="relative p-6 sm:p-10">
               {/* Form Header Info */}
-              <div className="mb-8">
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="flex items-center gap-2 mb-4"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500/20 to-cyan-500/20 border border-indigo-500/30 flex items-center justify-center">
-                    <Terminal className="w-4 h-4 text-indigo-400" />
-                  </div>
-                  <span className="text-xs font-mono text-white/30 uppercase tracking-widest">Secure Form</span>
-                </motion.div>
-                
+              <div className="mb-0">
                 <motion.h1 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -315,7 +280,7 @@ export function PublicForm() {
               </div>
 
               {/* Divider */}
-              <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-8" />
+              <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mt-4" />
 
               {/* Form Component */}
               <FormPreview form={form} onSubmit={handleSubmit} />

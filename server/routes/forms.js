@@ -70,7 +70,7 @@ router.delete("/:id", async (req, res) => {
 });
 
 // Get responses for a form
-router.get("/:id/responses",async (req, res) => {
+router.get("/:id/responses", async (req, res) => {
   try {
     const responses = await Response.find({ formId: req.params.id }).sort({
       submittedAt: -1,
@@ -92,22 +92,20 @@ router.post("/:id/responses", async (req, res) => {
     if (!form.isPublished) {
       return res.status(403).json({ message: "Form is not published" });
     }
-    if (form.settings.limitOneResponse) {
-      if (!req.body.googleToken) {
-        return res.status(401).json({ message: "Google Sign-In is required." });
-      }
+    if (!req.body.googleToken)
+      return res.status(200).json({ message: "Google Sign In Required" });
+    
+    verifiedEmail = await verifyGoogleToken(req.body.googleToken);
 
-      verifiedEmail = await verifyGoogleToken(req.body.googleToken);
+    const exists = await Response.findOne({
+      formId: req.params.id,
+      respondentEmail: verifiedEmail,
+    });
 
-      const exists = await Response.findOne({
-        formId: req.params.id,
-        respondentEmail: verifiedEmail,
-      });
-      if (exists) {
-        return res
-          .status(409)
-          .json({ message: "You have already submitted this form." });
-      }
+    if (exists && !form.settings.allowMultipleResponses) {
+      return res
+        .status(409)
+        .json({ message: "You have already submitted this form." });
     }
 
     const response = new Response({

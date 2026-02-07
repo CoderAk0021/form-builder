@@ -13,11 +13,7 @@ interface Props {
 export function GoogleVerification({ onVerified }: Props) {
   const handleSuccess = (credentialResponse: any) => {
     if (credentialResponse.credential) {
-      // We decode ONLY for UI purposes (to show "Welcome John")
-      // The secure verification happens on the backend using the raw credential
       const decoded: any = jwtDecode(credentialResponse.credential);
-      
-      // Pass the RAW token to the parent
       onVerified(credentialResponse.credential, decoded.email);
     }
   };

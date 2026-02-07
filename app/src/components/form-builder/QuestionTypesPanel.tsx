@@ -138,11 +138,8 @@ interface QuestionTypesPanelProps {
 
 export function QuestionTypesPanel({ onAddQuestion }: QuestionTypesPanelProps) {
   return (
-    // 1. h-full ensures it fills the bottom sheet
-    // 2. flex-col allows us to separate header/body/footer
     <div className="h-full w-full flex flex-col">
       
-      {/* Header - flex-shrink-0 prevents it from collapsing when list is long */}
       <div className="flex-shrink-0 flex items-center gap-2 px-2 mb-4">
         <Sparkles className="w-4 h-4 text-indigo-400" />
         <h3 className="text-xs font-semibold text-white/40 uppercase tracking-widest">
@@ -150,16 +147,11 @@ export function QuestionTypesPanel({ onAddQuestion }: QuestionTypesPanelProps) {
         </h3>
       </div>
 
-      {/* Scrollable Content Area 
-          1. flex-1: Takes up all remaining height
-          2. overflow-y-auto: Enables vertical scrolling
-          3. min-h-0: Crucial CSS fix for nested flex scrolling
-      */}
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="flex-1 overflow-y-auto min-h-0 space-y-6 pr-2 -mr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
+        className="flex-1 space-y-6 overflow-y-scroll"
       >
         {typeCategories.map((category) => (
           <div key={category.title} className="space-y-3">
