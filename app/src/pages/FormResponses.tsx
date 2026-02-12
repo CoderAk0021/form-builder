@@ -1,107 +1,103 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ArrowLeft, Download, FileText, BarChart3, Users, 
-  Calendar, ChevronLeft, ChevronRight, Search, Clock, 
+import {
+  Download,
+  FileText,
+  Users,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Loader,
+  RefreshCw,
+  Search,
+  Clock,
 } from 'lucide-react';
 import { ApiError, formsApi } from '../lib/api';
 import type { Form, FormResponse, Question, Answer } from '@/types/form';
 
 type FormResponseRow = FormResponse & { respondentEmail?: string };
 
-type StatColor = 'indigo' | 'cyan' | 'purple' | 'emerald';
-
-const statStyles: Record<StatColor, { gradient: string; badge: string; icon: string }> = {
-  indigo: {
-    gradient: 'from-indigo-500/10 to-transparent',
-    badge: 'bg-indigo-500/10 border-indigo-500/20',
-    icon: 'text-indigo-400',
-  },
-  cyan: {
-    gradient: 'from-cyan-500/10 to-transparent',
-    badge: 'bg-cyan-500/10 border-cyan-500/20',
-    icon: 'text-cyan-400',
-  },
-  purple: {
-    gradient: 'from-purple-500/10 to-transparent',
-    badge: 'bg-purple-500/10 border-purple-500/20',
-    icon: 'text-purple-400',
-  },
-  emerald: {
-    gradient: 'from-emerald-500/10 to-transparent',
-    badge: 'bg-emerald-500/10 border-emerald-500/20',
-    icon: 'text-emerald-400',
-  },
-};
-
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   const now = new Date();
   const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-  
+
   if (diffInHours < 24) {
-    return 'Today, ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  } else if (diffInHours < 48) {
-    return 'Yesterday, ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  } else {
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return `Today, ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   }
+
+  if (diffInHours < 48) {
+    return `Yesterday, ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  }
+
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 };
 
 export const FormResponses = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  
+
   const [form, setForm] = useState<Form | null>(null);
   const [responses, setResponses] = useState<FormResponseRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  useEffect(() => {
-    const fetchData = async () => {
+  const fetchData = useCallback(
+    async (showGlobalLoader = false) => {
       if (!id) {
         setError('Invalid form URL');
         setLoading(false);
+        setRefreshing(false);
         return;
       }
 
       try {
-        setLoading(true);
-        
+        if (showGlobalLoader) {
+          setLoading(true);
+        } else {
+          setRefreshing(true);
+        }
         const [formData, responsesData] = await Promise.all([
           formsApi.getByIdAdmin(id),
-          formsApi.getResponses(id)
+          formsApi.getResponses(id),
         ]);
-        
+
         setForm(formData);
         setResponses(responsesData);
       } catch (err: unknown) {
-        const message = err instanceof ApiError ? err.message : "Failed to load responses";
+        const message = err instanceof ApiError ? err.message : 'Failed to load responses';
         setError(message);
-        
+
         if (err instanceof ApiError && err.status === 401) {
           navigate('/login');
         }
       } finally {
         setLoading(false);
+        setRefreshing(false);
       }
-    };
-    fetchData();
-  }, [id, navigate]);
+    },
+    [id, navigate],
+  );
 
-  // Safe check to ensure responses is an array before filtering
-  // This prevents crashes if the API returns an error object unexpectedly
+  useEffect(() => {
+    void fetchData(true);
+  }, [fetchData]);
+
   const safeResponses = Array.isArray(responses) ? responses : [];
 
   const filteredResponses = safeResponses.filter((response) => {
     const searchLower = searchQuery.toLowerCase();
     const matchesEmail = response.respondentEmail?.toLowerCase().includes(searchLower);
-    const matchesContent = response.answers?.some((a: Answer) => 
-      String(a.value).toLowerCase().includes(searchLower)
+    const matchesContent = response.answers?.some((a: Answer) =>
+      String(a.value).toLowerCase().includes(searchLower),
     );
     return matchesEmail || matchesContent;
   });
@@ -109,13 +105,18 @@ export const FormResponses = () => {
   const totalPages = Math.ceil(filteredResponses.length / itemsPerPage);
   const paginatedResponses = filteredResponses.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   const handleExportCSV = () => {
     if (!form || !responses.length) return;
 
-    const headers = ['Submission Date','Email',...form.questions.map((q: Question) => `"${q.title}"`)];
+    const headers = [
+      'Submission Date',
+      'Email',
+      ...form.questions.map((q: Question) => `"${q.title}"`),
+    ];
+
     const rows = responses.map((response: FormResponseRow) => {
       const date = `"${new Date(response.submittedAt).toLocaleString()}"`;
       const respondentEmail = response.respondentEmail || 'Anonymous';
@@ -126,7 +127,8 @@ export const FormResponses = () => {
         val = String(val || '').replace(/"/g, '""');
         return `"${val}"`;
       });
-      return [date,respondentEmail,...answers].join(',');
+
+      return [date, respondentEmail, ...answers].join(',');
     });
 
     const csvContent = [headers.join(','), ...rows].join('\n');
@@ -142,29 +144,28 @@ export const FormResponses = () => {
 
   const stats = {
     total: safeResponses.length,
-    today: safeResponses.filter(r => {
+    today: safeResponses.filter((r) => {
       const date = new Date(r.submittedAt);
       const now = new Date();
       return date.toDateString() === now.toDateString();
     }).length,
-    thisWeek: safeResponses.filter(r => {
+    thisWeek: safeResponses.filter((r) => {
       const date = new Date(r.submittedAt);
       const now = new Date();
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       return date >= weekAgo;
     }).length,
-    uniqueEmails: new Set(safeResponses.map(r => r.respondentEmail)).size
+    uniqueEmails: new Set(safeResponses.map((r) => r.respondentEmail)).size,
   };
 
   const questions = form?.questions ?? [];
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0f0f12] flex items-center justify-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-900/20 via-[#0f0f12] to-[#0f0f12]" />
-        <div className="relative flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-2 border-white/5 border-t-indigo-500 rounded-full animate-spin" />
-          <p className="text-sm text-white/40 font-medium tracking-wider uppercase">Loading Analytics</p>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900/70 px-4 py-3 text-sm text-zinc-400">
+          <Loader className="h-4 w-4 animate-spin" />
+          Loading responses
         </div>
       </div>
     );
@@ -172,199 +173,156 @@ export const FormResponses = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0f0f12] flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-white/[0.02] border border-red-500/20 rounded-2xl p-8 max-w-md w-full text-center"
-        >
-          <div className="w-14 h-14 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/20">
-            <BarChart3 className="w-7 h-7 text-red-400" />
-          </div>
-          <h2 className="text-xl font-bold text-white mb-2">Failed to Load</h2>
-          <p className="text-white/40 mb-4">{error}</p>
-          <button onClick={() => navigate('/dashboard')} className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-colors">
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <div className="w-full max-w-md rounded-xl border border-zinc-800 bg-zinc-900/70 p-6 text-center">
+          <h2 className="text-lg font-semibold text-zinc-100">Failed to Load</h2>
+          <p className="mt-2 text-sm text-zinc-400">{error}</p>
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="mt-5 rounded-md border border-zinc-700 bg-zinc-950 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-900"
+          >
             Return to Dashboard
           </button>
-        </motion.div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0f0f12] text-white relative overflow-hidden">
-      {/* Background Effects */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[150px]" />
-        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-cyan-600/5 rounded-full blur-[150px]" />
+    <div className="min-h-[60vh]">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-900/60 px-4 py-3">
+        <div className="min-w-0">
+          <h1 className="truncate text-sm font-semibold text-zinc-100 sm:text-base">{form?.title}</h1>
+          <p className="text-xs text-zinc-500">Response analytics</p>
+        </div>
+          <button
+            onClick={handleExportCSV}
+            disabled={responses.length === 0}
+            className="inline-flex items-center gap-2 rounded-md bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-950 hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline">Export CSV</span>
+          </button>
       </div>
-      <div className="fixed inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
-
-      <div className="relative z-10">
-        {/* Header */}
-        <header className="border-b border-white/5 bg-[#0f0f12]/80 backdrop-blur-xl sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center gap-4">
-                <button 
-                  onClick={() => navigate('/dashboard')}
-                  className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors"
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                </button>
-                <div className="h-6 w-px bg-white/10" />
-                <div>
-                  <h1 className="text-lg font-semibold text-white">{form?.title}</h1>
-                  <p className="text-xs text-white/40">Response Analytics</p>
-                </div>
+      <main>
+        <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {[
+            { label: 'Total Responses', value: stats.total, icon: FileText },
+            { label: 'Today', value: stats.today, icon: Clock },
+            { label: 'This Week', value: stats.thisWeek, icon: Calendar },
+            { label: 'Unique Users', value: stats.uniqueEmails, icon: Users },
+          ].map((stat) => (
+            <div key={stat.label} className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-4">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs uppercase tracking-wide text-zinc-500">{stat.label}</p>
+                <stat.icon className="h-4 w-4 text-zinc-400" />
               </div>
+              <p className="text-2xl font-semibold text-zinc-100">{stat.value}</p>
+            </div>
+          ))}
+        </div>
 
-              <button 
-                onClick={handleExportCSV}
-                disabled={responses.length === 0}
-                className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-full font-medium hover:bg-white/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-sm font-medium text-zinc-300">Responses ({filteredResponses.length})</h2>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+              <input
+                type="text"
+                placeholder="Search responses..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="h-9 w-full rounded-md border border-zinc-800 bg-zinc-900 pl-9 pr-3 text-sm text-zinc-200 placeholder:text-zinc-500 focus:border-zinc-600 sm:w-72"
+              />
+            </div>
+            <button
+              onClick={() => void fetchData(false)}
+              disabled={refreshing}
+              className="inline-flex h-9 items-center gap-2 rounded-md border border-zinc-800 bg-zinc-900 px-3 text-sm text-zinc-300 hover:bg-zinc-800 disabled:opacity-60"
+            >
+              {refreshing ? (
+                <Loader className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline">Reload</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/60">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-zinc-800 bg-zinc-950/60">
+                  <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500">Date</th>
+                  <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500">Respondent</th>
+                  {questions.map((q: Question) => (
+                    <th key={q.id} className="min-w-[180px] px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500">
+                      <span className="block truncate max-w-[180px]">{q.title}</span>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800">
+                {paginatedResponses.length === 0 ? (
+                  <tr>
+                    <td colSpan={questions.length + 2} className="px-4 py-12 text-center text-sm text-zinc-500">
+                      No responses found
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedResponses.map((response) => (
+                    <tr key={response.id || response._id} className="hover:bg-zinc-900">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-zinc-400">{formatDate(response.submittedAt)}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-zinc-200">{response.respondentEmail || 'Anonymous'}</td>
+                      {questions.map((q: Question) => {
+                        const answerObj = response.answers?.find((a: Answer) => a.questionId === q.id);
+                        const val = answerObj ? answerObj.value : '-';
+                        const display = Array.isArray(val)
+                          ? val.join(', ')
+                          : val instanceof File
+                            ? val.name
+                            : String(val ?? '-');
+                        return (
+                          <td key={q.id} className="px-4 py-3 text-sm text-zinc-300">
+                            <span className="line-clamp-2">{display}</span>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-zinc-800 px-4 py-3">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="rounded-md border border-zinc-700 bg-zinc-950 p-2 text-zinc-400 hover:text-zinc-200 disabled:opacity-40"
               >
-                <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">Export CSV</span>
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="text-xs text-zinc-500">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="rounded-md border border-zinc-700 bg-zinc-950 p-2 text-zinc-400 hover:text-zinc-200 disabled:opacity-40"
+              >
+                <ChevronRight className="h-4 w-4" />
               </button>
             </div>
-          </div>
-        </header>
-
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            {[
-              { label: 'Total Responses', value: stats.total, icon: FileText, trend: '+12%', color: 'indigo' as const },
-              { label: 'Today', value: stats.today, icon: Clock, trend: 'Live', color: 'cyan' as const },
-              { label: 'This Week', value: stats.thisWeek, icon: Calendar, trend: '+5', color: 'purple' as const },
-              { label: 'Unique Users', value: stats.uniqueEmails, icon: Users, trend: '100%', color: 'emerald' as const },
-            ].map((stat, index) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="relative overflow-hidden rounded-2xl border border-white/5 bg-white/[0.02] p-5 hover:border-white/10 transition-all group"
-              >
-                <div className={`absolute inset-0 bg-gradient-to-br ${statStyles[stat.color].gradient} opacity-0 group-hover:opacity-100 transition-opacity`} />
-                <div className="relative flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-white/40 mb-1">{stat.label}</p>
-                    <p className="text-2xl font-bold text-white">{stat.value}</p>
-                  </div>
-                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center ${statStyles[stat.color].badge}`}>
-                    <stat.icon className={`w-5 h-5 ${statStyles[stat.color].icon}`} />
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Search & Filter Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <div className="flex items-center gap-3">
-              <h2 className="text-lg font-semibold text-white">Responses</h2>
-              <span className="px-2.5 py-1 rounded-full bg-white/5 text-white/60 text-xs font-medium border border-white/10">
-                {filteredResponses.length}
-              </span>
-            </div>
-
-            <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-                <input
-                  type="text"
-                  placeholder="Search responses..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-full text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-indigo-500/50 w-full sm:w-64"
-                />
-            </div>
-          </div>
-
-          {/* Table Container */}
-          <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden backdrop-blur-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-white/5 bg-white/[0.02]">
-                    <th className="px-6 py-4 text-xs font-medium text-white/40 uppercase tracking-wider whitespace-nowrap">Date</th>
-                    <th className="px-6 py-4 text-xs font-medium text-white/40 uppercase tracking-wider whitespace-nowrap">Respondent</th>
-                    {questions.map((q: Question) => (
-                      <th key={q.id} className="px-6 py-4 text-xs font-medium text-white/40 uppercase tracking-wider min-w-[200px]">
-                        <span className="truncate block max-w-[150px]">{q.title}</span>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  <AnimatePresence>
-                    {paginatedResponses.length === 0 ? (
-                      <tr>
-                        <td colSpan={questions.length + 2} className="px-6 py-16 text-center">
-                          <p className="text-white/40">No responses found</p>
-                        </td>
-                      </tr>
-                    ) : (
-                      paginatedResponses.map((response, idx) => (
-                        <motion.tr 
-                          key={response.id || response._id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: idx * 0.05 }}
-                          className="hover:bg-white/[0.02] transition-colors"
-                        >
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-white/60 font-mono">
-                            {formatDate(response.submittedAt)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-white/80">
-                             {response.respondentEmail || 'Anonymous'}
-                          </td>
-                          {questions.map((q: Question) => {
-                            const answerObj = response.answers?.find((a: Answer) => a.questionId === q.id);
-                            const val = answerObj ? answerObj.value : '-';
-                            const display = Array.isArray(val)
-                              ? val.join(', ')
-                              : val instanceof File
-                                ? val.name
-                                : String(val ?? '-');
-                            return (
-                              <td key={q.id} className="px-6 py-4 text-sm text-white/70">
-                                <span className="line-clamp-2">{display}</span>
-                              </td>
-                            );
-                          })}
-                        </motion.tr>
-                      ))
-                    )}
-                  </AnimatePresence>
-                </tbody>
-              </table>
-            </div>
-            
-            {/* Pagination Controls */}
-             {totalPages > 1 && (
-              <div className="border-t border-white/5 px-6 py-4 flex items-center justify-between">
-                <button
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="p-2 rounded-lg bg-white/5 text-white/60 hover:text-white disabled:opacity-30"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <span className="text-sm text-white/60">Page {currentPage} of {totalPages}</span>
-                <button
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className="p-2 rounded-lg bg-white/5 text-white/60 hover:text-white disabled:opacity-30"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-          </div>
-        </main>
-      </div>
+          )}
+        </div>
+      </main>
     </div>
   );
 };

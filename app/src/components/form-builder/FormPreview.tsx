@@ -1,21 +1,20 @@
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 import {
-  Star,
-  X,
-  Loader,
-  FileText,
-  Upload,
-  CheckCircle2,
   AlertCircle,
+  CheckCircle2,
+  FileText,
+  Loader,
   Shield,
+  Star,
+  Upload,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -23,8 +22,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { checkSubmissionStatus, uploadFile } from "@/lib/api";
 import type { Answer, Form, Question } from "@/types/form";
-import { checkSubmissionStatus, uploadFile } from "../../lib/api";
 import { GoogleVerification } from "./GoogleVerification";
 
 interface FormPreviewProps {
@@ -53,11 +53,10 @@ export function FormPreview({ form, onSubmit }: FormPreviewProps) {
         setGoogleToken(token);
         setDisplayEmail(email);
         toast.success("Authentication successful", {
-          icon: <Shield className="w-4 h-4" />,
+          icon: <Shield className="h-4 w-4" />,
         });
       }
-    } catch (error) {
-      console.error(error);
+    } catch {
       toast.error("Unable to verify submission status");
     }
   };
@@ -68,18 +67,13 @@ export function FormPreview({ form, onSubmit }: FormPreviewProps) {
 
   const validateForm = () => {
     for (const question of form.questions) {
-      if (question.required) {
-        const value = answers[question.id];
-        if (
-          !value ||
-          (Array.isArray(value) && value.length === 0) ||
-          value === ""
-        ) {
-          toast.error(`Required field: ${question.title}`, {
-            icon: <AlertCircle className="w-4 h-4" />,
-          });
-          return false;
-        }
+      if (!question.required) continue;
+      const value = answers[question.id];
+      if (!value || (Array.isArray(value) && value.length === 0) || value === "") {
+        toast.error(`Required field: ${question.title}`, {
+          icon: <AlertCircle className="h-4 w-4" />,
+        });
+        return false;
       }
     }
     return true;
@@ -113,183 +107,124 @@ export function FormPreview({ form, onSubmit }: FormPreviewProps) {
       ? (Object.keys(answers).length / form.questions.length) * 100
       : 0;
 
-  // Success State
   if (submitted) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center text-center p-6 md:p-12 bg-zinc-950">
-        <div className="w-16 h-16 md:w-20 md:h-20 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center mb-6">
-          <CheckCircle2
-            className="w-8 h-8 md:w-10 md:h-10 text-emerald-500"
-            strokeWidth={1.5}
-          />
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-8 text-center">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-emerald-800 bg-emerald-950/40">
+          <CheckCircle2 className="h-7 w-7 text-emerald-400" />
         </div>
-
-        <h3 className="text-xl md:text-2xl font-semibold text-zinc-100 mb-3 tracking-tight">
+        <h3 className="text-lg font-semibold text-zinc-100">
           {form.settings.confirmationMessage || "Submission Received"}
         </h3>
-
-        <p className="text-zinc-400 text-sm md:text-base max-w-md">
-          Your response has been securely recorded. Thank you for your
-          participation.
+        <p className="mt-2 text-sm text-zinc-400">
+          Your response has been securely recorded.
         </p>
       </div>
     );
   }
 
-  // Already Responded State
   if (alreadyResponded && !form.settings.allowMultipleResponses) {
     return (
-      <div className="flex items-center justify-center w-full h-screen p-6">
-        <div className="max-w-2xl mx-auto mt-8 md:mt-12 p-6 md:p-10 border border-zinc-800 bg-zinc-950 rounded-md">
-          <div className="text-center">
-            <div className="w-14 h-14 md:w-16 md:h-16 bg-red-500/10 border border-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <AlertCircle
-                className="w-7 h-7 md:w-8 md:h-8 text-red-500"
-                strokeWidth={1.5}
-              />
-            </div>
-
-            <h2 className="text-lg md:text-xl font-semibold text-zinc-100 mb-3 tracking-tight">
-              Response Limit Reached
-            </h2>
-
-            <p className="text-zinc-400 text-sm md:text-base mb-2">
-              A submission has already been recorded for{" "}
-              <span className="text-zinc-200 font-medium">
-                {displayEmail || "this account"}
-              </span>
-            </p>
-
-            <p className="text-xs text-zinc-500 mt-6 pt-4 border-t border-zinc-800">
-              This form accepts only one response per verified identity.
-            </p>
-          </div>
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-8 text-center">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-red-800 bg-red-950/30">
+          <AlertCircle className="h-7 w-7 text-red-400" />
         </div>
+        <h3 className="text-lg font-semibold text-zinc-100">Response Limit Reached</h3>
+        <p className="mt-2 text-sm text-zinc-400">
+          A response already exists for{" "}
+          <span className="text-zinc-200">{displayEmail || "this account"}</span>.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-zinc-700">
-      <form onSubmit={handleSubmit} className="max-w-full p-6 lg:p-12 ">
-        {/* Form Header */}
-        <div className="mb-8 md:mb-12 border-b border-zinc-800 pb-8">
-          <h1 className="text-2xl md:text-3xl font-semibold text-zinc-100 mb-3 tracking-tight">
-            {form.title}
-          </h1>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 sm:p-6">
+        <h1 className="text-xl font-semibold text-zinc-100 sm:text-2xl">{form.title}</h1>
+        {form.description && (
+          <p className="mt-2 text-sm leading-relaxed text-zinc-400">{form.description}</p>
+        )}
+      </div>
 
-          {form.description && (
-            <p className="text-zinc-400 text-sm md:text-base leading-relaxed max-w-2xl">
-              {form.description}
-            </p>
-          )}
+      {form.settings.showProgressBar && form.questions.length > 0 && (
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+          <div className="mb-2 flex items-center justify-between text-xs text-zinc-500">
+            <span>Completion</span>
+            <span>{Math.round(progress)}%</span>
+          </div>
+          <div className="h-1 overflow-hidden rounded-full bg-zinc-800">
+            <div className="h-full rounded-full bg-zinc-100" style={{ width: `${progress}%` }} />
+          </div>
         </div>
+      )}
 
-        {/* Progress Bar */}
-        {form.settings.showProgressBar && form.questions.length > 0 && (
-          <div className="mb-8 md:mb-12 space-y-2">
-            <div className="flex justify-between text-xs md:text-sm text-zinc-500">
-              <span>Completion</span>
-              <span className="font-medium text-zinc-300">
-                {Math.round(progress)}%
+      {form.settings.limitOneResponse && !googleToken && (
+        <GoogleVerification onVerified={handleVerification} />
+      )}
+
+      {googleToken && (
+        <div className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-800 bg-emerald-950/40">
+            <Shield className="h-4 w-4 text-emerald-400" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-zinc-100">Identity Verified</p>
+            <p className="text-xs text-zinc-500">{displayEmail}</p>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {form.questions.map((question, index) => (
+          <QuestionPreview
+            key={question.id}
+            question={question}
+            value={answers[question.id]}
+            onChange={(value) => handleAnswerChange(question.id, value)}
+            index={index + 1}
+            setUploading={setIsUploading}
+            uploading={isUploading}
+            googleToken={googleToken}
+          />
+        ))}
+      </div>
+
+      {form.questions.length > 0 && (
+        <div className="flex justify-end">
+          <Button
+            type="submit"
+            disabled={
+              (form.settings.limitOneResponse && !googleToken) ||
+              isUploading ||
+              isSubmitting
+            }
+            className="h-11 w-full max-w-md rounded-md bg-zinc-100 text-zinc-950 hover:bg-zinc-200"
+          >
+            {isSubmitting ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader className="h-4 w-4 animate-spin" />
+                Submitting...
               </span>
-            </div>
-            <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-zinc-100 rounded-full transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <p className="text-xs text-zinc-600 text-right">
-              {Object.keys(answers).length} of {form.questions.length} fields
-              completed
-            </p>
-          </div>
-        )}
-
-        {/* Verification Block */}
-        {form.settings.limitOneResponse && !googleToken && (
-          <div className="mb-8 md:mb-12">
-            <GoogleVerification onVerified={handleVerification} />
-          </div>
-        )}
-
-        {/* Verified Badge */}
-        {googleToken && (
-          <div className="flex items-center gap-3 p-4 mb-8 md:mb-12 border border-zinc-800 bg-zinc-900/50 text-zinc-300 rounded-md">
-            <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
-              <Shield className="w-4 h-4 text-emerald-500" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-zinc-200">
-                Identity Verified
-              </p>
-              <p className="text-xs text-zinc-500 truncate">
-                Authenticated as{" "}
-                <span className="text-zinc-300">{displayEmail}</span>
-              </p>
-            </div>
-            <div className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
-          </div>
-        )}
-
-        {/* Questions Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 md:grid-cols-2 gap-4 md:gap-6">
-          {form.questions.map((question, index) => (
-            <QuestionPreview
-              key={question.id}
-              question={question}
-              value={answers[question.id]}
-              onChange={(value) => handleAnswerChange(question.id, value)}
-              index={index + 1}
-              setUploading={setIsUploading}
-              uploading={isUploading}
-              googleToken={googleToken}
-            />
-          ))}
+            ) : isUploading ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader className="h-4 w-4 animate-spin" />
+                Processing Upload...
+              </span>
+            ) : form.settings.limitOneResponse && !googleToken ? (
+              <span className="inline-flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Verify Identity to Continue
+              </span>
+            ) : (
+              "Submit Response"
+            )}
+          </Button>
         </div>
-
-        {/* Submit Button */}
-        {form.questions.length > 0 && (
-          <div className="mt-8 md:mt-12 pt-8 border-t border-zinc-800 flex justify-end">
-            <Button
-              type="submit"
-              disabled={
-                (form.settings.limitOneResponse && !googleToken) ||
-                isUploading ||
-                isSubmitting
-              }
-              className="w-full max-w-md rounded-md h-12 md:h-14 text-sm md:text-base font-medium bg-zinc-100 text-zinc-950 hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isSubmitting ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Loader className="w-4 h-4 animate-spin" />
-                  Submitting...
-                </span>
-              ) : isUploading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Loader className="w-4 h-4 animate-spin" />
-                  Processing Upload...
-                </span>
-              ) : form.settings.limitOneResponse && !googleToken ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Shield className="w-4 h-4" />
-                  Verify Identity to Continue
-                </span>
-              ) : (
-                "Submit Response"
-              )}
-            </Button>
-          </div>
-        )}
-      </form>
-    </div>
+      )}
+    </form>
   );
 }
-
-// ---------------------------------------------------------------------
-// QUESTION PREVIEW COMPONENT
-// ---------------------------------------------------------------------
 
 interface QuestionPreviewProps {
   question: Question;
@@ -351,30 +286,22 @@ function QuestionPreview({
   const ratingValue = typeof value === "number" ? value : Number(value) || 0;
 
   return (
-    <div className="border rounded-lg border-zinc-800 bg-zinc-900/30 p-5 md:p-6 hover:border-zinc-700 transition-colors">
-      {/* Question Header */}
-      <div className="flex items-start gap-3 mb-4">
-        <div className="flex-shrink-0 w-6 h-6 rounded bg-zinc-800 flex items-center justify-center text-xs font-medium text-zinc-500">
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 sm:p-5">
+      <div className="mb-4 flex items-start gap-3">
+        <div className="inline-flex h-6 w-6 items-center justify-center rounded bg-zinc-800 text-xs text-zinc-400">
           {index}
         </div>
-
-        <div className="flex-1 min-w-0">
-          <Label className="text-sm md:text-base font-medium text-zinc-200 flex items-center gap-2 flex-wrap break-words">
+        <div className="min-w-0">
+          <Label className="text-sm font-medium text-zinc-200">
             {question.title}
-            {question.required && (
-              <span className="text-red-400 text-xs">*</span>
-            )}
+            {question.required && <span className="ml-1 text-red-400">*</span>}
           </Label>
-
           {question.description && (
-            <p className="text-xs text-zinc-500 mt-1 leading-relaxed break-words">
-              {question.description}
-            </p>
+            <p className="mt-1 text-xs text-zinc-500">{question.description}</p>
           )}
         </div>
       </div>
 
-      {/* Input Area */}
       <div className="space-y-3">
         {question.type === "short_text" && (
           <Input
@@ -382,7 +309,7 @@ function QuestionPreview({
             onChange={(e) => onChange(e.target.value)}
             placeholder={question.placeholder || "Enter your response"}
             required={question.required}
-            className="h-11 bg-zinc-950 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-600 focus:ring-0 rounded-md transition-colors"
+            className="h-10 rounded-md border-zinc-800 bg-zinc-950 text-zinc-100 placeholder:text-zinc-600"
           />
         )}
 
@@ -393,7 +320,7 @@ function QuestionPreview({
             placeholder={question.placeholder || "Enter detailed response"}
             required={question.required}
             rows={4}
-            className="bg-zinc-950 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-600 focus:ring-0 rounded-md resize-none transition-colors"
+            className="resize-none rounded-md border-zinc-800 bg-zinc-950 text-zinc-100 placeholder:text-zinc-600"
           />
         )}
 
@@ -404,7 +331,7 @@ function QuestionPreview({
             onChange={(e) => onChange(e.target.value)}
             placeholder={question.placeholder || "name@organization.com"}
             required={question.required}
-            className="h-11 bg-zinc-950 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-600 focus:ring-0 rounded-md transition-colors"
+            className="h-10 rounded-md border-zinc-800 bg-zinc-950 text-zinc-100 placeholder:text-zinc-600"
           />
         )}
 
@@ -415,7 +342,7 @@ function QuestionPreview({
             onChange={(e) => onChange(e.target.value)}
             placeholder={question.placeholder || "0"}
             required={question.required}
-            className="h-11 bg-zinc-950 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-600 focus:ring-0 rounded-md transition-colors"
+            className="h-10 rounded-md border-zinc-800 bg-zinc-950 text-zinc-100 placeholder:text-zinc-600"
           />
         )}
 
@@ -425,30 +352,23 @@ function QuestionPreview({
             value={selectValue}
             onChange={(e) => onChange(e.target.value)}
             required={question.required}
-            className="h-11 bg-zinc-950 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-600 focus:ring-0 rounded-md transition-colors [color-scheme:dark]"
+            className="h-10 rounded-md border-zinc-800 bg-zinc-950 text-zinc-100 [color-scheme:dark]"
           />
         )}
 
         {question.type === "multiple_choice" && (
-          <RadioGroup
-            value={selectValue}
-            onValueChange={onChange}
-            required={question.required}
-            className="space-y-2"
-          >
+          <RadioGroup value={selectValue} onValueChange={onChange} className="space-y-2">
             {question.options?.map((option) => (
               <label
                 key={option.id}
-                className="flex items-center gap-3 p-3 border border-zinc-800 bg-zinc-950 hover:border-zinc-700 cursor-pointer transition-colors group"
+                className="flex cursor-pointer items-center gap-3 rounded-md border border-zinc-800 bg-zinc-950 p-3"
               >
                 <RadioGroupItem
                   value={option.value}
                   id={option.id}
-                  className="border-zinc-600 text-zinc-100 data-[state=checked]:border-zinc-100 data-[state=checked]:bg-zinc-100 flex-shrink-0"
+                  className="border-zinc-600 data-[state=checked]:border-zinc-100 data-[state=checked]:bg-zinc-100"
                 />
-                <span className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors break-words flex-1">
-                  {option.label}
-                </span>
+                <span className="text-sm text-zinc-300">{option.label}</span>
               </label>
             ))}
           </RadioGroup>
@@ -459,7 +379,7 @@ function QuestionPreview({
             {question.options?.map((option) => (
               <label
                 key={option.id}
-                className="flex items-center gap-3 p-3 border border-zinc-800 bg-zinc-950 hover:border-zinc-700 cursor-pointer transition-colors group"
+                className="flex cursor-pointer items-center gap-3 rounded-md border border-zinc-800 bg-zinc-950 p-3"
               >
                 <Checkbox
                   id={option.id}
@@ -469,37 +389,25 @@ function QuestionPreview({
                     if (checked) {
                       onChange([...currentValues, option.value]);
                     } else {
-                      onChange(
-                        currentValues.filter((v: string) => v !== option.value),
-                      );
+                      onChange(currentValues.filter((v) => v !== option.value));
                     }
                   }}
-                  className="border-zinc-600 data-[state=checked]:bg-zinc-100 data-[state=checked]:border-zinc-100 flex-shrink-0"
+                  className="border-zinc-600 data-[state=checked]:border-zinc-100 data-[state=checked]:bg-zinc-100"
                 />
-                <span className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors break-words flex-1">
-                  {option.label}
-                </span>
+                <span className="text-sm text-zinc-300">{option.label}</span>
               </label>
             ))}
           </div>
         )}
 
         {question.type === "dropdown" && (
-          <Select
-            value={selectValue}
-            onValueChange={onChange}
-            required={question.required}
-          >
-            <SelectTrigger className="h-11 bg-zinc-950 border-zinc-800 text-zinc-100 hover:bg-zinc-900  focus:ring-0 focus:border-zinc-600 rounded-md">
+          <Select value={selectValue} onValueChange={onChange}>
+            <SelectTrigger className="h-10 rounded-md border-zinc-800 bg-zinc-950 text-zinc-100">
               <SelectValue placeholder="Select an option" />
             </SelectTrigger>
-            <SelectContent className="bg-zinc-950 border-zinc-800 text-zinc-100 rounded-md">
+            <SelectContent className="rounded-md border-zinc-800 bg-zinc-950 text-zinc-100">
               {question.options?.map((option) => (
-                <SelectItem
-                  key={option.id}
-                  value={option.value}
-                  className="focus:bg-zinc-900 focus:text-zinc-100 cursor-pointer rounded-md"
-                >
+                <SelectItem key={option.id} value={option.value}>
                   {option.label}
                 </SelectItem>
               ))}
@@ -508,19 +416,19 @@ function QuestionPreview({
         )}
 
         {question.type === "rating" && (
-          <div className="flex items-center gap-1 py-2">
+          <div className="flex items-center gap-1 py-1">
             {[...Array(question.maxRating || 5)].map((_, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => onChange(i + 1)}
-                className="focus:outline-none p-1 hover:scale-110 transition-transform"
+                className="rounded p-1"
               >
                 <Star
-                  className={`w-6 h-6 transition-colors ${
+                  className={`h-5 w-5 ${
                     ratingValue > i
                       ? "fill-zinc-100 text-zinc-100"
-                      : "text-zinc-700 hover:text-zinc-600"
+                      : "text-zinc-700"
                   }`}
                 />
               </button>
@@ -531,74 +439,57 @@ function QuestionPreview({
         {question.type === "file_upload" && (
           <div className="space-y-3">
             {value ? (
-              <div className="flex items-center justify-between p-4 border border-zinc-700 bg-zinc-950">
-                <div className="flex items-center gap-3 overflow-hidden">
-                  <div className="w-10 h-10 bg-zinc-900 border border-zinc-800 flex items-center justify-center flex-shrink-0">
-                    <FileText className="w-5 h-5 text-zinc-400" />
+              <div className="flex items-center justify-between rounded-md border border-zinc-700 bg-zinc-950 p-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="inline-flex h-8 w-8 items-center justify-center rounded border border-zinc-800 bg-zinc-900">
+                    <FileText className="h-4 w-4 text-zinc-400" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-zinc-300 truncate">
+                    <p className="truncate text-sm text-zinc-300">
                       {displayFileName || "Attached File"}
                     </p>
-                    <p className="text-xs text-zinc-600">
-                      Ready for submission
-                    </p>
+                    <p className="text-xs text-zinc-600">Ready for submission</p>
                   </div>
                 </div>
-
                 <button
                   type="button"
                   onClick={handleRemoveFile}
-                  className="p-2 hover:bg-red-500/10 text-zinc-500 hover:text-red-400 transition-colors flex-shrink-0"
+                  className="rounded p-1 text-zinc-500 hover:text-red-400"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
             ) : (
               <div
                 onClick={() => !isDisabled && fileInputRef.current?.click()}
-                className={`
-                  relative border-2 border-dashed p-8 text-center transition-all duration-200
-                  ${
-                    isDisabled
-                      ? "border-zinc-800 bg-zinc-950/50 cursor-not-allowed opacity-50"
-                      : "border-zinc-700 bg-zinc-950 cursor-pointer hover:border-zinc-500"
-                  }
-                `}
+                className={`rounded-md border-2 border-dashed p-6 text-center ${
+                  isDisabled
+                    ? "cursor-not-allowed border-zinc-800 bg-zinc-950/60 opacity-60"
+                    : "cursor-pointer border-zinc-700 bg-zinc-950"
+                }`}
               >
                 {uploading ? (
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="w-8 h-8 border-2 r border-zinc-700 border-t-zinc-400 rounded-full animate-spin" />
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader className="h-5 w-5 animate-spin text-zinc-500" />
                     <p className="text-sm text-zinc-500">Uploading...</p>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center gap-3">
-                    <div
-                      className={`
-                      w-10 h-10 flex items-center justify-center transition-colors
-                      ${isDisabled ? "bg-zinc-900" : "bg-zinc-900"}
-                    `}
+                  <div className="flex flex-col items-center gap-2">
+                    <Upload
+                      className={`h-5 w-5 ${isDisabled ? "text-zinc-600" : "text-zinc-400"}`}
+                    />
+                    <p
+                      className={`text-sm ${
+                        isDisabled ? "text-zinc-600" : "text-zinc-400"
+                      }`}
                     >
-                      <Upload
-                        className={`w-5 h-5 ${isDisabled ? "text-zinc-600" : "text-zinc-400"}`}
-                      />
-                    </div>
-
-                    <div>
-                      <p
-                        className={`text-sm font-medium ${isDisabled ? "text-zinc-600" : "text-zinc-400"}`}
-                      >
-                        {isDisabled
-                          ? "Authentication required to upload"
-                          : "Click to upload file"}
-                      </p>
-                      <p className="text-xs text-zinc-600 mt-1">
-                        PDF, DOC, PNG, JPG up to 5MB
-                      </p>
-                    </div>
+                      {isDisabled
+                        ? "Authentication required to upload"
+                        : "Click to upload file"}
+                    </p>
+                    <p className="text-xs text-zinc-600">PDF, DOC, PNG, JPG up to 5MB</p>
                   </div>
                 )}
-
                 <input
                   ref={fileInputRef}
                   type="file"

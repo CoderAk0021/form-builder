@@ -4,12 +4,11 @@ import { useForm, type FieldErrors } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { 
-  AlertCircle, 
-  ArrowRight
+  AlertCircle,
+  Loader,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { FormPreview } from '@/components/form-builder/FormPreview';
-import { Spinner } from '@/components/ui/spinner';
 import { useForms } from '@/hooks/useForms';
 import type { Form, FormResponse } from '@/types/form';
 
@@ -139,12 +138,10 @@ export function PublicForm() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
-        <div className="w-full max-w-sm">
-          <div className="flex flex-col items-center gap-3 text-center">
-            <Spinner className="size-5 text-zinc-400" />
-            <h2 className="text-zinc-300 text-sm font-medium tracking-tight">Loading form</h2>
-          </div>
+      <div className="flex min-h-screen items-center justify-center bg-zinc-950 p-4">
+        <div className="flex items-center gap-2 text-sm text-zinc-400">
+          <Loader className="h-4 w-4 animate-spin" />
+          Loading form
         </div>
       </div>
     );
@@ -153,35 +150,22 @@ export function PublicForm() {
   // --- Error State ---
   if (error) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
-        <div className="max-w-md w-full border border-zinc-800 bg-zinc-900 p-8 md:p-10">
-          <div className="text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 border border-zinc-700 bg-zinc-950 mb-6">
-              <AlertCircle className="w-6 h-6 text-zinc-400" />
-            </div>
-            
-            <div className="inline-flex items-center gap-2 px-3 py-1 border border-zinc-800 bg-zinc-950 text-zinc-500 text-xs font-medium uppercase tracking-wider mb-4">
-              <span className="w-1.5 h-1.5 bg-zinc-500" />
-              Error
-            </div>
-            
-            <h2 className="text-xl font-semibold text-zinc-100 mb-3 tracking-tight">{error}</h2>
-            <p className="text-zinc-500 text-sm mb-8 leading-relaxed">
-              Unable to access the requested form. Please verify the URL or contact the administrator.
-            </p>
-            
-            <button 
-              onClick={() => window.location.reload()}
-              className="group w-full py-3 px-6 border border-zinc-700 bg-zinc-950 text-zinc-300 text-sm font-medium hover:bg-zinc-900 hover:border-zinc-600 transition-colors"
-            >
-              <span className="flex items-center justify-center gap-2">
-                Try Again
-                <ArrowRight className="w-4 h-4 text-zinc-500" />
-              </span>
-            </button>
+      <div className="flex min-h-screen items-center justify-center bg-zinc-950 p-4">
+        <div className="w-full max-w-md rounded-xl border border-zinc-800 bg-zinc-900/70 p-8 text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-zinc-700 bg-zinc-950">
+            <AlertCircle className="h-6 w-6 text-zinc-400" />
           </div>
-          
-          <p className="text-center mt-6 text-zinc-700 text-xs font-mono uppercase">
+          <h2 className="text-xl font-semibold text-zinc-100">{error}</h2>
+          <p className="mt-2 text-sm text-zinc-500">
+            Unable to access the requested form. Please verify the URL or contact the administrator.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-6 inline-flex h-10 items-center justify-center rounded-md border border-zinc-700 bg-zinc-950 px-4 text-sm text-zinc-300 hover:bg-zinc-900"
+          >
+            Try Again
+          </button>
+          <p className="mt-5 text-xs font-mono uppercase text-zinc-700">
             Ref: {formId ? formId.substring(0, 8).toUpperCase() : 'NULL'}
           </p>
         </div>
@@ -191,20 +175,11 @@ export function PublicForm() {
 
   if (!form) return null;
 
-  // --- Success State ---
   return (
-    <div className="min-h-screen bg-zinc-950 selection:bg-zinc-700 selection:text-zinc-100">
-      <div className="">
-        <div className="w-full mx-auto ">
-          <div className="">
-            {/* Top Accent Line */}
-            <div className="h-[1px] bg-zinc-700" />
-            
-            {/* Form Content */}
-            <div className="">
-              <FormPreview form={form} onSubmit={handleSubmit} />
-            </div>
-          </div>
+    <div className="min-h-screen bg-zinc-950 px-4 py-8 selection:bg-zinc-700 selection:text-zinc-100 sm:px-6">
+      <div className="mx-auto w-full max-w-[1200px]">
+        <div className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-4 sm:p-6">
+          <FormPreview form={form} onSubmit={handleSubmit} />
         </div>
       </div>
     </div>

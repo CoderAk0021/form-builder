@@ -1,5 +1,4 @@
 import { useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   DndContext,
   closestCenter,
@@ -69,7 +68,7 @@ interface SettingsContentProps {
 const SettingsContent = ({ form, onUpdateSettings }: SettingsContentProps) => (
   <div className="space-y-6">
     <div className="space-y-4">
-      <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
+      <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-white/10">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
             <Eye className="w-4 h-4 text-indigo-400" />
@@ -81,7 +80,7 @@ const SettingsContent = ({ form, onUpdateSettings }: SettingsContentProps) => (
             >
               Progress Bar
             </Label>
-            <p className="text-xs text-white/40">Show completion progress</p>
+            <p className="text-xs text-zinc-500">Show completion progress</p>
           </div>
         </div>
         <Switch
@@ -94,7 +93,7 @@ const SettingsContent = ({ form, onUpdateSettings }: SettingsContentProps) => (
         />
       </div>
 
-      <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
+      <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-white/10">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center">
             <Copy className="w-4 h-4 text-cyan-400" />
@@ -106,7 +105,7 @@ const SettingsContent = ({ form, onUpdateSettings }: SettingsContentProps) => (
             >
               Multiple Responses
             </Label>
-            <p className="text-xs text-white/40">
+            <p className="text-xs text-zinc-500">
               Allow users to submit multiple times
             </p>
           </div>
@@ -132,7 +131,7 @@ const SettingsContent = ({ form, onUpdateSettings }: SettingsContentProps) => (
           onUpdateSettings({ confirmationMessage: e.target.value })
         }
         placeholder="Thank you for your response!"
-        className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-indigo-500/50 focus:ring-indigo-500/20 rounded-xl min-h-[100px] resize-none"
+        className="bg-zinc-900 border-white/10 text-white placeholder:text-zinc-600 focus:border-indigo-500/50 focus:ring-indigo-500/20 rounded-xl min-h-[100px] resize-none"
       />
     </div>
   </div>
@@ -304,16 +303,10 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
   }, [shareUrl, form.title, isQrGenerating]);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white relative overflow-hidden flex flex-col">
-      {/* Background Effects */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[150px]" />
-        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-purple-600/5 rounded-full blur-[150px]" />
-      </div>
-      <div className="fixed inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none z-0" />
+    <div className="min-h-[60vh] rounded-lg border border-zinc-800 bg-zinc-950 text-white relative overflow-hidden flex flex-col">
 
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-white/5 bg-[#0a0a0f]/80 backdrop-blur-xl">
+      <header className="z-30 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 gap-4">
             {/* Left: Back & Title */}
@@ -322,12 +315,12 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
                 variant="ghost"
                 size="icon"
                 onClick={onBack}
-                className="text-white/60 hover:text-white hover:bg-white/10 flex-shrink-0"
+                className="text-zinc-400 hover:text-white hover:bg-zinc-800 flex-shrink-0"
               >
                 <ChevronLeft className="w-5 h-5" />
               </Button>
 
-              <div className="h-6 w-px bg-white/10 hidden sm:block flex-shrink-0" />
+              <div className="h-6 w-px bg-zinc-800 hidden sm:block flex-shrink-0" />
 
               <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500/20 to-cyan-500/20 border border-indigo-500/30 flex items-center justify-center flex-shrink-0  sm:flex">
@@ -338,7 +331,7 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
                   onChange={(e) =>
                     setForm((prev) => ({ ...prev, title: e.target.value }))
                   }
-                  className="font-semibold text-base sm:text-lg bg-transparent border-0 border-b border-transparent hover:border-white/10 focus:border-indigo-500/50 focus:ring-0 px-0 text-white placeholder:text-white/30 w-full min-w-0"
+                  className="font-semibold text-base sm:text-lg bg-transparent border-0 border-b border-transparent hover:border-white/10 focus:border-indigo-500/50 focus:ring-0 px-0 text-white placeholder:text-zinc-600 w-full min-w-0"
                   placeholder="Untitled Form"
                 />
               </div>
@@ -347,13 +340,13 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
             {/* Right: Actions */}
             <div className="flex items-center gap-2 flex-shrink-0">
               {/* Preview Toggle (Desktop/Tablet) */}
-              <div className="hidden md:flex bg-white/5 rounded-lg p-1 border border-white/10">
+              <div className="hidden md:flex bg-zinc-900 rounded-lg p-1 border border-white/10">
                 <button
                   onClick={() => setPreviewMode(false)}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${
                     !previewMode
-                      ? "bg-white/10 text-white shadow-sm"
-                      : "text-white/40 hover:text-white/60"
+                      ? "bg-zinc-800 text-white shadow-sm"
+                      : "text-zinc-500 hover:text-zinc-400"
                   }`}
                 >
                   <Settings className="w-3.5 h-3.5" />
@@ -363,8 +356,8 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
                   onClick={() => setPreviewMode(true)}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${
                     previewMode
-                      ? "bg-white/10 text-white shadow-sm"
-                      : "text-white/40 hover:text-white/60"
+                      ? "bg-zinc-800 text-white shadow-sm"
+                      : "text-zinc-500 hover:text-zinc-400"
                   }`}
                 >
                   <Eye className="w-3.5 h-3.5" />
@@ -377,7 +370,7 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
                 variant="ghost"
                 size="icon"
                 onClick={() => setPreviewMode(!previewMode)}
-                className="md:hidden text-white/60 hover:text-white"
+                className="md:hidden text-zinc-400 hover:text-white"
               >
                 {previewMode ? (
                   <Settings className="w-5 h-5" />
@@ -386,14 +379,14 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
                 )}
               </Button>
 
-              <div className="h-6 w-px bg-white/10 hidden sm:block" />
+              <div className="h-6 w-px bg-zinc-800 hidden sm:block" />
 
               {/* Share Button (Responsive) */}
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowShareDialog(true)}
-                className="bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white hidden sm:flex"
+                className="bg-zinc-900 border-white/10 text-white hover:bg-zinc-800 hover:text-white hidden sm:flex"
               >
                 <Share2 className="w-4 h-4 mr-2" />
                 Share
@@ -402,7 +395,7 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowShareDialog(true)}
-                className="sm:hidden text-white/60 hover:text-white"
+                className="sm:hidden text-zinc-400 hover:text-white"
               >
                 <Share2 className="w-5 h-5" />
               </Button>
@@ -412,11 +405,11 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
                 onClick={handleSave}
                 size="sm"
                 disabled={isSaving}
-                className="bg-white text-black hover:bg-white/90 rounded-lg font-medium px-3 sm:px-6"
+                className="bg-white text-zinc-950 hover:bg-white/90 rounded-lg font-medium px-3 sm:px-6"
               >
                 {isSaving ? (
                   <>
-                    <Loader className="w-4 h-4 sm:mr-2 animate-spin" />
+                    <Loader className="w-4 h-4 sm:mr-2" />
                     <span className="hidden sm:inline">Saving...</span>
                   </>
                 ) : (
@@ -433,7 +426,7 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
 
       {/* Share Dialog */}
       <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-        <DialogContent className="bg-[#0f0f14] border-white/10 text-white max-w-[90vw] sm:max-w-md rounded-2xl">
+        <DialogContent className="bg-zinc-950 border-white/10 text-white max-w-[90vw] sm:max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
               <Share2 className="w-5 h-5 text-indigo-400" />
@@ -442,7 +435,7 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
           </DialogHeader>
           <div className="space-y-6 mt-4">
             <div className="space-y-3">
-              <Label className="text-sm font-medium text-white/60">
+              <Label className="text-sm font-medium text-zinc-400">
                 Public Link
               </Label>
               <div className="flex gap-2">
@@ -450,10 +443,10 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
                   <Input
                     value={shareUrl}
                     readOnly
-                    className="bg-white/5 border-white/10 text-white/80 text-sm pr-16 sm:pr-20 font-mono"
+                    className="bg-zinc-900 border-white/10 text-white/80 text-sm pr-16 sm:pr-20 font-mono"
                   />
                   <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                    <span className="text-xs text-white/30 px-2 py-1 rounded bg-white/5">
+                    <span className="text-xs text-zinc-600 px-2 py-1 rounded bg-zinc-900">
                       URL
                     </span>
                   </div>
@@ -465,7 +458,7 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
                     toast.success("Link copied");
                     setTimeout(() => setIsCopied(false), 2000);
                   }}
-                  className={`px-3 sm:px-4 transition-all ${isCopied ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-white/10 hover:bg-white/20 text-white border-white/10"}`}
+                  className={`px-3 sm:px-4 transition-all ${isCopied ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-zinc-800 hover:bg-white/20 text-white border-white/10"}`}
                   variant="outline"
                 >
                   {isCopied ? (
@@ -477,11 +470,11 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
               </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-4">
+            <div className="p-4 rounded-xl bg-zinc-900 border border-white/10 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-2 h-2 rounded-full ${form.isPublished ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`}
+                    className={`w-2 h-2 rounded-full ${form.isPublished ? "bg-emerald-400" : "bg-amber-400"}`}
                   />
                   <span className="text-sm font-medium text-white">
                     {form.isPublished ? "Published" : "Draft"}
@@ -495,7 +488,7 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
                   className="data-[state=checked]:bg-emerald-500"
                 />
               </div>
-              <p className="text-xs text-white/40">
+              <p className="text-xs text-zinc-500">
                 {form.isPublished
                   ? "Your form is live and accepting responses"
                   : "Publish to make your form accessible"}
@@ -505,7 +498,7 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                className="flex-1 bg-white/5 border-white/10 text-white hover:bg-white/10"
+                className="flex-1 bg-zinc-900 border-white/10 text-white hover:bg-zinc-800"
                 onClick={() => window.open(shareUrl, "_blank")}
               >
                 <Eye className="w-4 h-4 mr-2" />
@@ -513,13 +506,13 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
               </Button>
               <Button
                 variant="outline"
-                className="flex-1 bg-white/5 border-white/10 text-white hover:bg-white/10"
+                className="flex-1 bg-zinc-900 border-white/10 text-white hover:bg-zinc-800"
                 onClick={handleDownloadQrCode}
                 disabled={isQrGenerating}
               >
                 {isQrGenerating ? (
                   <>
-                    <Loader className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader className="w-4 h-4 mr-2" />
                     Generating QR Code...
                   </>
                 ) : (
@@ -535,25 +528,18 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
       </Dialog>
 
       {/* Main Content */}
-      <main className="flex-1 relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <AnimatePresence mode="wait">
-          {previewMode ? (
-            <motion.div
-              key="preview"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="w-full flex flex-col items-center"
-            >
+      <main className="flex-1 relative z-10 w-full px-4 py-6 sm:px-6 lg:px-8">
+        {previewMode ? (
+          <div className="w-full flex flex-col items-center">
               {/* Preview Controls */}
               <div className="flex items-center justify-center gap-2 mb-6">
-                <div className="flex bg-white/5 rounded-lg p-1 border border-white/10">
+                <div className="flex bg-zinc-900 rounded-lg p-1 border border-white/10">
                   <button
                     onClick={() => setDevicePreview("desktop")}
                     className={`px-3 py-2 rounded-md transition-all text-sm font-medium flex items-center gap-2 ${
                       devicePreview === "desktop"
-                        ? "bg-white/10 text-white"
-                        : "text-white/40 hover:text-white/60"
+                        ? "bg-zinc-800 text-white"
+                        : "text-zinc-500 hover:text-zinc-400"
                     }`}
                   >
                     <Monitor className="w-4 h-4" />
@@ -563,8 +549,8 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
                     onClick={() => setDevicePreview("mobile")}
                     className={`px-3 py-2 rounded-md transition-all text-sm font-medium flex items-center gap-2 ${
                       devicePreview === "mobile"
-                        ? "bg-white/10 text-white"
-                        : "text-white/40 hover:text-white/60"
+                        ? "bg-zinc-800 text-white"
+                        : "text-zinc-500 hover:text-zinc-400"
                     }`}
                   >
                     <Smartphone className="w-4 h-4" />
@@ -577,34 +563,28 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
               <div
                 className={`w-full transition-all duration-500 ${devicePreview === "mobile" ? "max-w-[375px]" : "max-w-4xl"}`}
               >
-                <div className="bg-[#0f0f14] rounded-2xl border border-white/10 shadow-2xl shadow-black/50 overflow-hidden">
+                <div className="bg-zinc-950 rounded-2xl border border-white/10 shadow-2xl shadow-black/50 overflow-hidden">
                   <div className="h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500" />
                   <div className="p-4 sm:p-8 overflow-x-hidden">
                     <FormPreview form={form} />
                   </div>
                 </div>
               </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="editor"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="flex flex-col lg:flex-row gap-6 relative"
-            >
+          </div>
+        ) : (
+          <div className="flex flex-col lg:flex-row gap-6 relative">
               {/* Mobile Action Bar */}
               <div className="lg:hidden grid grid-cols-2 gap-3 mb-2 sticky top-0 z-20 pb-2">
                 <Sheet open={showMobileAdd} onOpenChange={setShowMobileAdd}>
                   <SheetTrigger asChild>
-                    <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-500/20">
+                    <Button className="w-full bg-zinc-100 hover:bg-zinc-200 text-white shadow-lg shadow-indigo-500/20">
                       <Plus className="w-4 h-4 mr-2" />
                       Add Question
                     </Button>
                   </SheetTrigger>
                   <SheetContent
                     side="bottom"
-                    className="h-[70vh] bg-[#0f0f14] border-white/10 p-0 rounded-t-2xl overflow-y-auto scrollbar-hide"
+                    className="h-[70vh] bg-zinc-950 border-white/10 p-0 rounded-t-2xl overflow-y-auto scrollbar-hide"
                   >
                     <div className="p-6">
                       <SheetHeader className="mb-4 text-left">
@@ -624,7 +604,7 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
                   <SheetTrigger asChild>
                     <Button
                       variant="outline"
-                      className="w-full bg-white/5 border-white/10 text-white hover:bg-white/10"
+                      className="w-full bg-zinc-900 border-white/10 text-white hover:bg-zinc-800"
                     >
                       <Settings className="w-4 h-4 mr-2" />
                       Settings
@@ -632,7 +612,7 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
                   </SheetTrigger>
                   <SheetContent
                     side="right"
-                    className="w-[70%] px-5 sm:w-[400px] bg-[#0f0f14] border-white/10"
+                    className="w-[70%] px-5 sm:w-[400px] bg-zinc-950 border-white/10"
                   >
                     <SheetHeader>
                       <SheetTitle className="text-white flex items-center gap-2">
@@ -654,23 +634,23 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
               {/* Left Sidebar - Tools (Desktop Only) */}
               <div className="hidden lg:block w-64 flex-shrink-0 scrollbar-hide">
                 <div className="sticky top-24 space-y-4 ">
-                  <div className="bg-white/[0.02] backdrop-blur-xl border border-white/10 rounded-2xl p-4 ">
-                    <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-4 px-2">
+                  <div className="bg-zinc-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-4 ">
+                    <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4 px-2">
                       Add Questions
                     </h3>
                     <QuestionTypesPanel onAddQuestion={handleAddQuestion} />
                   </div>
 
-                  <div className="bg-white/[0.02] backdrop-blur-xl border border-white/10 rounded-2xl p-4">
-                    <h3 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-4 px-2">
+                  <div className="bg-zinc-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-4">
+                    <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4 px-2">
                       History
                     </h3>
                     <div className="flex gap-2">
-                      <button className="flex-1 p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors flex items-center justify-center gap-2">
+                      <button className="flex-1 p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors flex items-center justify-center gap-2">
                         <Undo2 className="w-4 h-4" />
                         <span className="text-xs">Undo</span>
                       </button>
-                      <button className="flex-1 p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors flex items-center justify-center gap-2">
+                      <button className="flex-1 p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors flex items-center justify-center gap-2">
                         <Redo2 className="w-4 h-4" />
                         <span className="text-xs">Redo</span>
                       </button>
@@ -682,20 +662,16 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
               {/* Center - Builder */}
               <div className="flex-1 w-full min-w-0 max-w-3xl mx-auto">
                 {/* Form Header */}
-                <motion.div
-                  className="relative group mb-6"
-                  whileHover={{ scale: 1.005 }}
-                  transition={{ duration: 0.2 }}
-                >
+                <div className="relative group mb-6">
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity blur-sm" />
-                  <div className="relative bg-white/[0.02] backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 hover:border-white/20 transition-colors">
+                  <div className="relative bg-zinc-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 hover:border-white/20 transition-colors">
                     <Input
                       value={form.title}
                       onChange={(e) =>
                         setForm((prev) => ({ ...prev, title: e.target.value }))
                       }
                       placeholder="Form Title"
-                      className="text-xl sm:text-2xl font-bold bg-transparent border-0 border-b border-transparent hover:border-white/10 focus:border-indigo-500/50 focus:ring-0 px-0 text-white placeholder:text-white/20 mb-4"
+                      className="text-xl sm:text-2xl font-bold bg-transparent border-0 border-b border-transparent hover:border-white/10 focus:border-indigo-500/50 focus:ring-0 px-0 text-white placeholder:text-zinc-700 mb-4"
                     />
                     <Textarea
                       value={form.description}
@@ -706,11 +682,11 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
                         }))
                       }
                       placeholder="Add a description to help respondents understand the purpose of this form..."
-                      className="bg-transparent border-0 border-b border-transparent hover:border-white/10 focus:border-indigo-500/50 focus:ring-0 px-0 text-white/70 placeholder:text-white/30 resize-none text-sm min-h-[60px]"
+                      className="bg-transparent border-0 border-b border-transparent hover:border-white/10 focus:border-indigo-500/50 focus:ring-0 px-0 text-white/70 placeholder:text-zinc-600 resize-none text-sm min-h-[60px]"
                       rows={2}
                     />
                   </div>
-                </motion.div>
+                </div>
 
                 {/* Questions List */}
                 <DndContext
@@ -722,17 +698,8 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
                     items={form.questions.map((q) => q.id)}
                     strategy={verticalListSortingStrategy}
                   >
-                    <AnimatePresence mode="popLayout">
-                      {form.questions.map((question, index) => (
-                        <motion.div
-                          key={question.id}
-                          layout
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          transition={{ delay: index * 0.05 }}
-                          className="mb-4"
-                        >
+                    {form.questions.map((question) => (
+                      <div key={question.id} className="mb-4">
                           <QuestionCard
                             question={question}
                             isActive={activeQuestionId === question.id}
@@ -745,36 +712,31 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
                               handleDuplicateQuestion(question.id)
                             }
                           />
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
+                      </div>
+                    ))}
                   </SortableContext>
                 </DndContext>
 
                 {form.questions.length === 0 && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="text-center py-16 bg-white/[0.02] border border-dashed border-white/10 rounded-2xl"
-                  >
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/5 flex items-center justify-center">
-                      <Plus className="w-8 h-8 text-white/20" />
+                  <div className="text-center py-16 bg-zinc-900/60 border border-dashed border-white/10 rounded-2xl">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-zinc-900 flex items-center justify-center">
+                      <Plus className="w-8 h-8 text-zinc-700" />
                     </div>
-                    <p className="text-white/40 font-medium mb-2">
+                    <p className="text-zinc-500 font-medium mb-2">
                       Start building your form
                     </p>
-                    <p className="text-sm text-white/20 px-4">
+                    <p className="text-sm text-zinc-700 px-4">
                       Add your first question using the controls{" "}
                       {window.innerWidth < 1024 ? "above" : "to the left"}
                     </p>
-                  </motion.div>
+                  </div>
                 )}
               </div>
 
               {/* Right Sidebar - Settings (Desktop Only) */}
               <div className="hidden lg:block w-72 flex-shrink-0">
                 <div className="sticky top-24">
-                  <div className="bg-white/[0.02] backdrop-blur-xl border border-white/10 rounded-2xl p-5">
+                  <div className="bg-zinc-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-5">
                     <div className="flex items-center gap-2 mb-6">
                       <Settings className="w-4 h-4 text-indigo-400" />
                       <h3 className="text-sm font-semibold text-white">
@@ -789,9 +751,8 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
                   </div>
                 </div>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+          </div>
+        )}
       </main>
     </div>
   );

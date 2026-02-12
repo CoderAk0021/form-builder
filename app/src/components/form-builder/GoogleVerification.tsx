@@ -1,7 +1,7 @@
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from "jwt-decode";
 import { toast } from 'sonner';
-import { Shield } from 'lucide-react';
+import { Shield, UserCheck } from 'lucide-react';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_CLIENT_ID;
 
@@ -31,36 +31,38 @@ export function GoogleVerification({ onVerified }: Props) {
 
   if (!GOOGLE_CLIENT_ID) {
     return (
-      <div className="border border-zinc-800 bg-zinc-900/50 p-4 text-xs text-zinc-500">
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 text-xs text-zinc-500">
         Authentication unavailable. Configuration required.
       </div>
     );
   }
 
   return (
-    <div className="border border-zinc-800 bg-zinc-900/30 p-6 md:p-8 text-center rounded-md">
-      <div className="flex flex-col items-center space-y-4">
-        {/* Icon */}
-        <div className="w-10 h-10 border border-zinc-700 bg-zinc-950 flex items-center justify-center rounded-full">
-          <Shield className="w-5 h-5 text-zinc-400" />
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 sm:p-6">
+      <div className="flex flex-col items-center text-center">
+        <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-700 bg-zinc-950">
+          <Shield className="h-5 w-5 text-zinc-300" />
         </div>
-
-        {/* Text */}
-        <div>
-          <h3 className="text-zinc-300 text-sm font-medium tracking-tight">
-            Verify Identity to Continue
-          </h3>
-        </div>
-
-        {/* Google Button Wrapper */}
-        <div className="mt-2 p-1 border border-zinc-800 bg-zinc-950 rounded-md">
+        <h3 className="text-sm font-semibold text-zinc-100">
+          Verify Identity
+        </h3>
+        <p className="mt-1 text-xs text-zinc-500">
+          Continue with Google to submit this form.
+        </p>
+        <div className="mt-4 w-full max-w-xs rounded-md border border-zinc-800 bg-zinc-950 p-2 flex items-center flex-col justify-center">
+          <div className="mb-2 flex items-center justify-center gap-2 text-xs text-zinc-500">
+            <UserCheck className="h-3.5 w-3.5" />
+            Secure verification
+          </div>
           <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
             <GoogleLogin
               onSuccess={handleSuccess}
               onError={() => toast.error("Authentication failed")}
-              theme="filled_black" 
+              theme="filled_black"
               shape="rectangular"
               text="continue_with"
+              size="large"
+              width="240"
             />
           </GoogleOAuthProvider>
         </div>

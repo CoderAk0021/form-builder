@@ -143,3 +143,24 @@ a {
 *::after {
   border-color: hsl(var(--border));
 }
+
+/* Global no-motion mode across app UI */
+*,
+*::before,
+*::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+@keyframes spinner-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spinner-rotate 0.9s linear infinite !important;
+}
