@@ -1,10 +1,8 @@
 import { useState, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import type { Variants } from "framer-motion";
 import {
   Star,
   X,
-  Loader2,
+  Loader,
   FileText,
   Upload,
   CheckCircle2,
@@ -34,33 +32,8 @@ interface FormPreviewProps {
   onSubmit?: (
     answers: Record<string, unknown>,
     googleToken: string,
-  ) => void;
+  ) => void | Promise<void>;
 }
-
-// Animation variants
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.05,
-      delayChildren: 0.1,
-    },
-  },
-};
-
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      type: "spring",
-      stiffness: 100,
-      damping: 15,
-    },
-  },
-};
 
 export function FormPreview({ form, onSubmit }: FormPreviewProps) {
   const [answers, setAnswers] = useState<Record<string, Answer["value"]>>({});
@@ -69,6 +42,7 @@ export function FormPreview({ form, onSubmit }: FormPreviewProps) {
   const [displayEmail, setDisplayEmail] = useState<string | null>(null);
   const [alreadyResponded, setAlreadyResponded] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleVerification = async (token: string, email: string) => {
     try {
@@ -78,13 +52,13 @@ export function FormPreview({ form, onSubmit }: FormPreviewProps) {
       } else {
         setGoogleToken(token);
         setDisplayEmail(email);
-        toast.success("Identity verified successfully", {
+        toast.success("Authentication successful", {
           icon: <Shield className="w-4 h-4" />,
         });
       }
     } catch (error) {
       console.error(error);
-      toast.error("Failed to verify submission status");
+      toast.error("Unable to verify submission status");
     }
   };
 
@@ -101,7 +75,7 @@ export function FormPreview({ form, onSubmit }: FormPreviewProps) {
           (Array.isArray(value) && value.length === 0) ||
           value === ""
         ) {
-          toast.error(`Please fill out: "${question.title}"`, {
+          toast.error(`Required field: ${question.title}`, {
             icon: <AlertCircle className="w-4 h-4" />,
           });
           return false;
@@ -111,17 +85,27 @@ export function FormPreview({ form, onSubmit }: FormPreviewProps) {
     return true;
   };
 
-  const handleSubmit = (e: React.SubmitEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     if (!validateForm()) return;
     if (!googleToken && form.settings.limitOneResponse) {
-      toast.error("Please sign in first");
+      toast.error("Authentication required");
       return;
     }
-    if (onSubmit && googleToken) {
-      onSubmit(answers, googleToken);
+    try {
+      setIsSubmitting(true);
+      if (onSubmit && googleToken) {
+        await onSubmit(answers, googleToken);
+      }
+      setSubmitted(true);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to submit form";
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
     }
-    setSubmitted(true);
   };
 
   const progress =
@@ -132,194 +116,125 @@ export function FormPreview({ form, onSubmit }: FormPreviewProps) {
   // Success State
   if (submitted) {
     return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: "spring", stiffness: 200, damping: 20 }}
-        className="min-h-[500px] flex flex-col items-center justify-center text-center p-4 md:p-8 relative overflow-hidden"
-      >
-        {/* Background glow effect */}
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-cyan-500/10 pointer-events-none" />
+      <div className="min-h-screen flex flex-col items-center justify-center text-center p-6 md:p-12 bg-zinc-950">
+        <div className="w-16 h-16 md:w-20 md:h-20 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center mb-6">
+          <CheckCircle2
+            className="w-8 h-8 md:w-10 md:h-10 text-emerald-500"
+            strokeWidth={1.5}
+          />
+        </div>
 
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-          className="relative w-20 h-20 md:w-24 md:h-24 mb-6 md:mb-8"
-        >
-          <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-xl animate-pulse" />
-          <div className="relative w-full h-full bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-full flex items-center justify-center shadow-2xl shadow-emerald-500/25">
-            <CheckCircle2
-              className="w-10 h-10 md:w-12 md:h-12 text-white"
-              strokeWidth={2.5}
-            />
-          </div>
-        </motion.div>
+        <h3 className="text-xl md:text-2xl font-semibold text-zinc-100 mb-3 tracking-tight">
+          {form.settings.confirmationMessage || "Submission Received"}
+        </h3>
 
-        <motion.h3
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent mb-4 px-4"
-        >
-          {form.settings.confirmationMessage || "Thank you for your response!"}
-        </motion.h3>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="text-gray-400 text-base md:text-lg max-w-md px-4"
-        >
-          Your submission has been recorded successfully.
-        </motion.p>
-      </motion.div>
+        <p className="text-zinc-400 text-sm md:text-base max-w-md">
+          Your response has been securely recorded. Thank you for your
+          participation.
+        </p>
+      </div>
     );
   }
 
   // Already Responded State
   if (alreadyResponded && !form.settings.allowMultipleResponses) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-2xl mx-auto mt-6 md:mt-10 p-6 md:p-8 relative overflow-hidden rounded-2xl border border-red-500/20 bg-red-950/10 backdrop-blur-sm mx-4"
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-orange-500/5 pointer-events-none" />
+      <div className="flex items-center justify-center w-full h-screen p-6">
+        <div className="max-w-2xl mx-auto mt-8 md:mt-12 p-6 md:p-10 border border-zinc-800 bg-zinc-950 rounded-md">
+          <div className="text-center">
+            <div className="w-14 h-14 md:w-16 md:h-16 bg-red-500/10 border border-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <AlertCircle
+                className="w-7 h-7 md:w-8 md:h-8 text-red-500"
+                strokeWidth={1.5}
+              />
+            </div>
 
-        <div className="relative text-center">
-          <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-red-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-red-500/20 rotate-3 hover:rotate-0 transition-transform duration-300">
-            <AlertCircle
-              className="w-8 h-8 md:w-10 md:h-10 text-white"
-              strokeWidth={2.5}
-            />
+            <h2 className="text-lg md:text-xl font-semibold text-zinc-100 mb-3 tracking-tight">
+              Response Limit Reached
+            </h2>
+
+            <p className="text-zinc-400 text-sm md:text-base mb-2">
+              A submission has already been recorded for{" "}
+              <span className="text-zinc-200 font-medium">
+                {displayEmail || "this account"}
+              </span>
+            </p>
+
+            <p className="text-xs text-zinc-500 mt-6 pt-4 border-t border-zinc-800">
+              This form accepts only one response per verified identity.
+            </p>
           </div>
-
-          <h2 className="text-xl md:text-2xl font-bold text-white mb-3">
-            Response Already Received
-          </h2>
-
-          <p className="text-gray-400 text-base md:text-lg mb-2">
-            The email{" "}
-            <span className="text-white font-semibold bg-white/10 px-2 py-0.5 rounded break-all">
-              {displayEmail || "associated with your account"}
-            </span>{" "}
-            has already submitted a response.
-          </p>
-
-          <p className="text-sm text-gray-500 mt-6 border-t border-white/10 pt-4">
-            This form is limited to one response per person.
-          </p>
         </div>
-      </motion.div>
+      </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-transparent text-gray-100 font-sans selection:bg-indigo-500/30">
-      {/* Ambient background */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-64 h-64 md:w-96 md:h-96 bg-indigo-600/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-64 h-64 md:w-96 md:h-96 bg-purple-600/10 rounded-full blur-3xl" />
-      </div>
-
-      <motion.form
-        onSubmit={handleSubmit}
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="relative max-w-3xl mx-auto px-4 py-8 md:py-12 space-y-6 md:space-y-8"
-      >
-        {/* Form Header Info */}
-        <div className="mb-0">
-          <motion.h1
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="text-2xl sm:text-3xl font-bold text-white mb-2 leading-tight"
-          >
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-zinc-700">
+      <form onSubmit={handleSubmit} className="max-w-full p-6 lg:p-12 ">
+        {/* Form Header */}
+        <div className="mb-8 md:mb-12 border-b border-zinc-800 pb-8">
+          <h1 className="text-2xl md:text-3xl font-semibold text-zinc-100 mb-3 tracking-tight">
             {form.title}
-          </motion.h1>
+          </h1>
 
           {form.description && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="text-white/50 leading-relaxed"
-            >
+            <p className="text-zinc-400 text-sm md:text-base leading-relaxed max-w-2xl">
               {form.description}
-            </motion.p>
+            </p>
           )}
         </div>
+
         {/* Progress Bar */}
         {form.settings.showProgressBar && form.questions.length > 0 && (
-          <motion.div variants={itemVariants} className="space-y-3 px-1">
-            <div className="flex justify-between text-sm text-gray-400">
-              <span>Progress</span>
-              <span className="font-medium text-white">
+          <div className="mb-8 md:mb-12 space-y-2">
+            <div className="flex justify-between text-xs md:text-sm text-zinc-500">
+              <span>Completion</span>
+              <span className="font-medium text-zinc-300">
                 {Math.round(progress)}%
               </span>
             </div>
-            <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-              <motion.div
-                className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"
-                initial={{ width: 0 }}
-                animate={{ width: `${progress}%` }}
-                transition={{ type: "spring", stiffness: 100, damping: 20 }}
+            <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-zinc-100 rounded-full transition-all duration-300"
+                style={{ width: `${progress}%` }}
               />
             </div>
-            <p className="text-xs text-gray-500 text-right">
-              {Object.keys(answers).length} of {form.questions.length} answered
+            <p className="text-xs text-zinc-600 text-right">
+              {Object.keys(answers).length} of {form.questions.length} fields
+              completed
             </p>
-          </motion.div>
+          </div>
         )}
 
         {/* Verification Block */}
-        <AnimatePresence mode="wait">
-          {form.settings.limitOneResponse && !googleToken && (
-            <motion.div
-              key="verification"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              variants={itemVariants}
-            >
-              <GoogleVerification onVerified={handleVerification} />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {form.settings.limitOneResponse && !googleToken && (
+          <div className="mb-8 md:mb-12">
+            <GoogleVerification onVerified={handleVerification} />
+          </div>
+        )}
 
         {/* Verified Badge */}
-        <AnimatePresence>
-          {googleToken && (
-            <motion.div
-              initial={{ opacity: 0, y: -10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="flex items-center gap-3 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
-            >
-              <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                <Shield className="w-4 h-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-emerald-300">
-                  Identity Verified
-                </p>
-                <p className="text-xs text-emerald-400/70 truncate">
-                  Responding as{" "}
-                  <span className="text-emerald-300 font-semibold">
-                    {displayEmail}
-                  </span>
-                </p>
-              </div>
-              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {googleToken && (
+          <div className="flex items-center gap-3 p-4 mb-8 md:mb-12 border border-zinc-800 bg-zinc-900/50 text-zinc-300 rounded-md">
+            <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
+              <Shield className="w-4 h-4 text-emerald-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-zinc-200">
+                Identity Verified
+              </p>
+              <p className="text-xs text-zinc-500 truncate">
+                Authenticated as{" "}
+                <span className="text-zinc-300">{displayEmail}</span>
+              </p>
+            </div>
+            <div className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
+          </div>
+        )}
 
-        {/* Questions */}
-        <div className="space-y-6">
+        {/* Questions Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 md:grid-cols-2 gap-4 md:gap-6">
           {form.questions.map((question, index) => (
             <QuestionPreview
               key={question.id}
@@ -336,47 +251,38 @@ export function FormPreview({ form, onSubmit }: FormPreviewProps) {
 
         {/* Submit Button */}
         {form.questions.length > 0 && (
-          <motion.div variants={itemVariants} className="pt-4 md:pt-8 pb-10">
+          <div className="mt-8 md:mt-12 pt-8 border-t border-zinc-800 flex justify-end">
             <Button
               type="submit"
               disabled={
-                (form.settings.limitOneResponse && !googleToken) || isUploading
+                (form.settings.limitOneResponse && !googleToken) ||
+                isUploading ||
+                isSubmitting
               }
-              className="group relative w-full h-12 md:h-14 text-base md:text-lg font-semibold rounded-xl overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+              className="w-full max-w-md rounded-md h-12 md:h-14 text-sm md:text-base font-medium bg-zinc-100 text-zinc-950 hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {/* Button gradient background */}
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_100%] group-hover:bg-[position:100%_0] transition-all duration-500" />
-
-              {/* Glow effect */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.3),transparent_70%)]" />
-
-              {/* Content */}
-              <span className="relative flex items-center justify-center gap-2 text-white">
-                {isUploading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Uploading...
-                  </>
-                ) : form.settings.limitOneResponse && !googleToken ? (
-                  <>
-                    <Shield className="w-5 h-5" />
-                    Verify to Submit
-                  </>
-                ) : (
-                  <>
-                    Submit Response
-
-                  </>
-                )}
-              </span>
+              {isSubmitting ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader className="w-4 h-4 animate-spin" />
+                  Submitting...
+                </span>
+              ) : isUploading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader className="w-4 h-4 animate-spin" />
+                  Processing Upload...
+                </span>
+              ) : form.settings.limitOneResponse && !googleToken ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Shield className="w-4 h-4" />
+                  Verify Identity to Continue
+                </span>
+              ) : (
+                "Submit Response"
+              )}
             </Button>
-
-            <p className="text-center text-xs text-gray-500 mt-4 hidden md:block">
-              Press Enter to submit
-            </p>
-          </motion.div>
+          </div>
         )}
-      </motion.form>
+      </form>
     </div>
   );
 }
@@ -436,296 +342,277 @@ function QuestionPreview({
     localFileName ||
     (typeof value === "string" ? value.split("/").pop() : null);
   const isDisabled = uploading || !googleToken;
-  const textValue = typeof value === "string" || typeof value === "number" ? String(value) : "";
+  const textValue =
+    typeof value === "string" || typeof value === "number" ? String(value) : "";
   const selectValue = typeof value === "string" ? value : "";
-  const checkboxValues = Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
+  const checkboxValues = Array.isArray(value)
+    ? value.filter((v): v is string => typeof v === "string")
+    : [];
   const ratingValue = typeof value === "number" ? value : Number(value) || 0;
 
   return (
-    <motion.div
-      variants={itemVariants}
-      className="group relative rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-sm p-5 md:p-6 hover:border-white/[0.12] hover:bg-white/[0.04] transition-all duration-300"
-    >
-      {/* Subtle gradient overlay on hover */}
-      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-
-      <div className="relative">
-        {/* Question Header */}
-        <div className="flex items-start gap-3 md:gap-4 mb-4 md:mb-5">
-          <div className="flex-shrink-0 w-7 h-7 md:w-8 md:h-8 rounded-lg bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/20 flex items-center justify-center text-xs md:text-sm font-bold text-indigo-300 mt-0.5 md:mt-0">
-            {index}
-          </div>
-
-          <div className="flex-1 pt-0.5 md:pt-1 min-w-0">
-            <Label className="text-base md:text-lg font-semibold text-gray-100 flex items-center gap-2 flex-wrap break-words">
-              {question.title}
-              {question.required && (
-                <span className="text-red-400 text-sm font-medium">*</span>
-              )}
-            </Label>
-
-            {question.description && (
-              <p className="text-xs md:text-sm text-gray-500 mt-1 leading-relaxed break-words">
-                {question.description}
-              </p>
-            )}
-          </div>
+    <div className="border rounded-lg border-zinc-800 bg-zinc-900/30 p-5 md:p-6 hover:border-zinc-700 transition-colors">
+      {/* Question Header */}
+      <div className="flex items-start gap-3 mb-4">
+        <div className="flex-shrink-0 w-6 h-6 rounded bg-zinc-800 flex items-center justify-center text-xs font-medium text-zinc-500">
+          {index}
         </div>
 
-        {/* Input Area */}
-        {/* On mobile: full width (ml-0), On desktop: indented (ml-12) */}
-        <div className="ml-0 md:ml-12 mt-3 md:mt-0 space-y-3">
-          {question.type === "short_text" && (
-            <Input
-              value={textValue}
-              onChange={(e) => onChange(e.target.value)}
-              placeholder={question.placeholder || "Type your answer..."}
-              required={question.required}
-              className="h-11 md:h-12 bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-indigo-500/50 focus:ring-indigo-500/20 rounded-xl transition-all"
-            />
-          )}
+        <div className="flex-1 min-w-0">
+          <Label className="text-sm md:text-base font-medium text-zinc-200 flex items-center gap-2 flex-wrap break-words">
+            {question.title}
+            {question.required && (
+              <span className="text-red-400 text-xs">*</span>
+            )}
+          </Label>
 
-          {question.type === "long_text" && (
-            <Textarea
-              value={textValue}
-              onChange={(e) => onChange(e.target.value)}
-              placeholder={question.placeholder || "Type your answer..."}
-              required={question.required}
-              rows={4}
-              className="bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-indigo-500/50 focus:ring-indigo-500/20 rounded-xl resize-none transition-all"
-            />
-          )}
-
-          {question.type === "email" && (
-            <Input
-              type="email"
-              value={textValue}
-              onChange={(e) => onChange(e.target.value)}
-              placeholder={question.placeholder || "name@example.com"}
-              required={question.required}
-              className="h-11 md:h-12 bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-indigo-500/50 focus:ring-indigo-500/20 rounded-xl transition-all"
-            />
-          )}
-
-          {question.type === "number" && (
-            <Input
-              type="number"
-              value={textValue}
-              onChange={(e) => onChange(e.target.value)}
-              placeholder={question.placeholder || "0"}
-              required={question.required}
-              className="h-11 md:h-12 bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-indigo-500/50 focus:ring-indigo-500/20 rounded-xl transition-all"
-            />
-          )}
-
-          {question.type === "date" && (
-            <Input
-              type="date"
-              value={selectValue}
-              onChange={(e) => onChange(e.target.value)}
-              required={question.required}
-              className="h-11 md:h-12 bg-white/5 border-white/10 text-white placeholder:text-gray-600 focus:border-indigo-500/50 focus:ring-indigo-500/20 rounded-xl transition-all [color-scheme:dark]"
-            />
-          )}
-
-          {question.type === "multiple_choice" && (
-            <RadioGroup
-              value={selectValue}
-              onValueChange={onChange}
-              required={question.required}
-              className="space-y-2 md:space-y-3"
-            >
-              {question.options?.map((option) => (
-                <label
-                  key={option.id}
-                  className="flex items-start md:items-center gap-3 p-3 md:p-4 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-indigo-500/30 cursor-pointer transition-all group/item"
-                >
-                  <RadioGroupItem
-                    value={option.value}
-                    id={option.id}
-                    className="mt-0.5 md:mt-0 border-white/20 text-indigo-400 data-[state=checked]:border-indigo-500 data-[state=checked]:bg-indigo-500 flex-shrink-0"
-                  />
-                  <span className="text-sm md:text-base text-gray-300 group-hover/item:text-white transition-colors break-words flex-1">
-                    {option.label}
-                  </span>
-                </label>
-              ))}
-            </RadioGroup>
-          )}
-
-          {question.type === "checkbox" && (
-            <div className="space-y-2 md:space-y-3">
-              {question.options?.map((option) => (
-                <label
-                  key={option.id}
-                  className="flex items-start md:items-center gap-3 p-3 md:p-4 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-indigo-500/30 cursor-pointer transition-all group/item"
-                >
-                  <Checkbox
-                    id={option.id}
-                    checked={checkboxValues.includes(option.value)}
-                    onCheckedChange={(checked) => {
-                      const currentValues = checkboxValues;
-                      if (checked) {
-                        onChange([...currentValues, option.value]);
-                      } else {
-                        onChange(
-                          currentValues.filter(
-                            (v: string) => v !== option.value,
-                          ),
-                        );
-                      }
-                    }}
-                    className="mt-0.5 md:mt-0 border-white/20 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500 flex-shrink-0"
-                  />
-                  <span className="text-sm md:text-base text-gray-300 group-hover/item:text-white transition-colors break-words flex-1">
-                    {option.label}
-                  </span>
-                </label>
-              ))}
-            </div>
-          )}
-
-          {question.type === "dropdown" && (
-            <Select
-              value={selectValue}
-              onValueChange={onChange}
-              required={question.required}
-            >
-              <SelectTrigger className="h-11 md:h-12 bg-white/5 border-white/10 text-white hover:bg-white/[0.08] rounded-xl focus:ring-indigo-500/20 focus:border-indigo-500/50">
-                <SelectValue placeholder="Select an option..." />
-              </SelectTrigger>
-              <SelectContent className="bg-[#0f0f15] border-white/10 text-white rounded-xl">
-                {question.options?.map((option) => (
-                  <SelectItem
-                    key={option.id}
-                    value={option.value}
-                    className="focus:bg-white/10 focus:text-white rounded-lg cursor-pointer"
-                  >
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-
-          {question.type === "rating" && (
-            <div className="flex items-center gap-1 md:gap-2 py-2 flex-wrap">
-              {[...Array(question.maxRating || 5)].map((_, i) => (
-                <motion.button
-                  key={i}
-                  type="button"
-                  onClick={() => onChange(i + 1)}
-                  whileHover={{ scale: 1.15 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="focus:outline-none p-1"
-                >
-                  <Star
-                    className={`w-7 h-7 md:w-8 md:h-8 transition-all duration-200 ${
-                      ratingValue > i
-                        ? "fill-amber-400 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]"
-                        : "text-gray-700 hover:text-gray-600"
-                    }`}
-                  />
-                </motion.button>
-              ))}
-            </div>
-          )}
-
-          {question.type === "file_upload" && (
-            <div className="space-y-3">
-              {value ? (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20"
-                >
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    <div className="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
-                      <FileText className="w-5 h-5 text-indigo-400" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-200 truncate">
-                        {displayFileName || "Attached File"}
-                      </p>
-                      <p className="text-xs text-gray-500">Ready to submit</p>
-                    </div>
-                  </div>
-
-                  <motion.button
-                    type="button"
-                    onClick={handleRemoveFile}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="p-2 rounded-lg hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors flex-shrink-0"
-                  >
-                    <X className="w-5 h-5" />
-                  </motion.button>
-                </motion.div>
-              ) : (
-                <div
-                  onClick={() => !isDisabled && fileInputRef.current?.click()}
-                  className={`
-                    relative overflow-hidden rounded-xl border-2 border-dashed p-6 md:p-8 text-center transition-all duration-300
-                    ${
-                      isDisabled
-                        ? "border-white/5 bg-white/[0.02] cursor-not-allowed opacity-50"
-                        : "border-white/10 bg-white/[0.02] cursor-pointer hover:border-indigo-500/50 hover:bg-indigo-500/5"
-                    }
-                  `}
-                >
-                  {uploading ? (
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="relative">
-                        <div className="w-10 h-10 rounded-full border-2 border-indigo-500/20 border-t-indigo-500 animate-spin" />
-                      </div>
-                      <p className="text-sm text-gray-400">
-                        Uploading your file...
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-3">
-                      <div
-                        className={`
-                        w-12 h-12 rounded-xl flex items-center justify-center transition-colors
-                        ${isDisabled ? "bg-white/5" : "bg-indigo-500/10"}
-                      `}
-                      >
-                        <Upload
-                          className={`w-6 h-6 ${isDisabled ? "text-gray-600" : "text-indigo-400"}`}
-                        />
-                      </div>
-
-                      <div>
-                        <p
-                          className={`text-sm font-medium ${isDisabled ? "text-gray-500" : "text-gray-300"}`}
-                        >
-                          {isDisabled
-                            ? "Sign in to upload files"
-                            : "Click to upload or drag and drop"}
-                        </p>
-                        <p className="text-xs text-gray-600 mt-1">
-                          PDF, DOC, Images up to 5MB
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    className="hidden"
-                    accept={question.acceptFileTypes || "*/*"}
-                    onChange={(e) => handleFileSelect(e.target.files?.[0])}
-                    disabled={isDisabled}
-                    required={question.required && !value}
-                  />
-                </div>
-              )}
-            </div>
+          {question.description && (
+            <p className="text-xs text-zinc-500 mt-1 leading-relaxed break-words">
+              {question.description}
+            </p>
           )}
         </div>
       </div>
-    </motion.div>
+
+      {/* Input Area */}
+      <div className="space-y-3">
+        {question.type === "short_text" && (
+          <Input
+            value={textValue}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={question.placeholder || "Enter your response"}
+            required={question.required}
+            className="h-11 bg-zinc-950 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-600 focus:ring-0 rounded-md transition-colors"
+          />
+        )}
+
+        {question.type === "long_text" && (
+          <Textarea
+            value={textValue}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={question.placeholder || "Enter detailed response"}
+            required={question.required}
+            rows={4}
+            className="bg-zinc-950 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-600 focus:ring-0 rounded-md resize-none transition-colors"
+          />
+        )}
+
+        {question.type === "email" && (
+          <Input
+            type="email"
+            value={textValue}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={question.placeholder || "name@organization.com"}
+            required={question.required}
+            className="h-11 bg-zinc-950 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-600 focus:ring-0 rounded-md transition-colors"
+          />
+        )}
+
+        {question.type === "number" && (
+          <Input
+            type="number"
+            value={textValue}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={question.placeholder || "0"}
+            required={question.required}
+            className="h-11 bg-zinc-950 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-600 focus:ring-0 rounded-md transition-colors"
+          />
+        )}
+
+        {question.type === "date" && (
+          <Input
+            type="date"
+            value={selectValue}
+            onChange={(e) => onChange(e.target.value)}
+            required={question.required}
+            className="h-11 bg-zinc-950 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-600 focus:ring-0 rounded-md transition-colors [color-scheme:dark]"
+          />
+        )}
+
+        {question.type === "multiple_choice" && (
+          <RadioGroup
+            value={selectValue}
+            onValueChange={onChange}
+            required={question.required}
+            className="space-y-2"
+          >
+            {question.options?.map((option) => (
+              <label
+                key={option.id}
+                className="flex items-center gap-3 p-3 border border-zinc-800 bg-zinc-950 hover:border-zinc-700 cursor-pointer transition-colors group"
+              >
+                <RadioGroupItem
+                  value={option.value}
+                  id={option.id}
+                  className="border-zinc-600 text-zinc-100 data-[state=checked]:border-zinc-100 data-[state=checked]:bg-zinc-100 flex-shrink-0"
+                />
+                <span className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors break-words flex-1">
+                  {option.label}
+                </span>
+              </label>
+            ))}
+          </RadioGroup>
+        )}
+
+        {question.type === "checkbox" && (
+          <div className="space-y-2">
+            {question.options?.map((option) => (
+              <label
+                key={option.id}
+                className="flex items-center gap-3 p-3 border border-zinc-800 bg-zinc-950 hover:border-zinc-700 cursor-pointer transition-colors group"
+              >
+                <Checkbox
+                  id={option.id}
+                  checked={checkboxValues.includes(option.value)}
+                  onCheckedChange={(checked) => {
+                    const currentValues = checkboxValues;
+                    if (checked) {
+                      onChange([...currentValues, option.value]);
+                    } else {
+                      onChange(
+                        currentValues.filter((v: string) => v !== option.value),
+                      );
+                    }
+                  }}
+                  className="border-zinc-600 data-[state=checked]:bg-zinc-100 data-[state=checked]:border-zinc-100 flex-shrink-0"
+                />
+                <span className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors break-words flex-1">
+                  {option.label}
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
+
+        {question.type === "dropdown" && (
+          <Select
+            value={selectValue}
+            onValueChange={onChange}
+            required={question.required}
+          >
+            <SelectTrigger className="h-11 bg-zinc-950 border-zinc-800 text-zinc-100 hover:bg-zinc-900  focus:ring-0 focus:border-zinc-600 rounded-md">
+              <SelectValue placeholder="Select an option" />
+            </SelectTrigger>
+            <SelectContent className="bg-zinc-950 border-zinc-800 text-zinc-100 rounded-md">
+              {question.options?.map((option) => (
+                <SelectItem
+                  key={option.id}
+                  value={option.value}
+                  className="focus:bg-zinc-900 focus:text-zinc-100 cursor-pointer rounded-md"
+                >
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
+        {question.type === "rating" && (
+          <div className="flex items-center gap-1 py-2">
+            {[...Array(question.maxRating || 5)].map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => onChange(i + 1)}
+                className="focus:outline-none p-1 hover:scale-110 transition-transform"
+              >
+                <Star
+                  className={`w-6 h-6 transition-colors ${
+                    ratingValue > i
+                      ? "fill-zinc-100 text-zinc-100"
+                      : "text-zinc-700 hover:text-zinc-600"
+                  }`}
+                />
+              </button>
+            ))}
+          </div>
+        )}
+
+        {question.type === "file_upload" && (
+          <div className="space-y-3">
+            {value ? (
+              <div className="flex items-center justify-between p-4 border border-zinc-700 bg-zinc-950">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className="w-10 h-10 bg-zinc-900 border border-zinc-800 flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-5 h-5 text-zinc-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-zinc-300 truncate">
+                      {displayFileName || "Attached File"}
+                    </p>
+                    <p className="text-xs text-zinc-600">
+                      Ready for submission
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleRemoveFile}
+                  className="p-2 hover:bg-red-500/10 text-zinc-500 hover:text-red-400 transition-colors flex-shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div
+                onClick={() => !isDisabled && fileInputRef.current?.click()}
+                className={`
+                  relative border-2 border-dashed p-8 text-center transition-all duration-200
+                  ${
+                    isDisabled
+                      ? "border-zinc-800 bg-zinc-950/50 cursor-not-allowed opacity-50"
+                      : "border-zinc-700 bg-zinc-950 cursor-pointer hover:border-zinc-500"
+                  }
+                `}
+              >
+                {uploading ? (
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-8 h-8 border-2 r border-zinc-700 border-t-zinc-400 rounded-full animate-spin" />
+                    <p className="text-sm text-zinc-500">Uploading...</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-3">
+                    <div
+                      className={`
+                      w-10 h-10 flex items-center justify-center transition-colors
+                      ${isDisabled ? "bg-zinc-900" : "bg-zinc-900"}
+                    `}
+                    >
+                      <Upload
+                        className={`w-5 h-5 ${isDisabled ? "text-zinc-600" : "text-zinc-400"}`}
+                      />
+                    </div>
+
+                    <div>
+                      <p
+                        className={`text-sm font-medium ${isDisabled ? "text-zinc-600" : "text-zinc-400"}`}
+                      >
+                        {isDisabled
+                          ? "Authentication required to upload"
+                          : "Click to upload file"}
+                      </p>
+                      <p className="text-xs text-zinc-600 mt-1">
+                        PDF, DOC, PNG, JPG up to 5MB
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  accept={question.acceptFileTypes || "*/*"}
+                  onChange={(e) => handleFileSelect(e.target.files?.[0])}
+                  disabled={isDisabled}
+                  required={question.required && !value}
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
-
