@@ -9,6 +9,7 @@ const router = express.Router();
 router.post("/admin/login", handleLogin);
 router.get("/verify", checkCookies, handleVerify);
 router.post("/logout", handleLogout);
+//router.post('/admin/register',handleRegister);
 
 export default router;
 
