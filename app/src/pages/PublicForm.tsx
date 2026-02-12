@@ -1,14 +1,57 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useParams } from 'react-router-dom';
+import { useForm, type FieldErrors } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { 
   AlertCircle, 
-  Fingerprint,
   ArrowRight
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { FormPreview } from '@/components/form-builder/FormPreview';
+import { Spinner } from '@/components/ui/spinner';
 import { useForms } from '@/hooks/useForms';
 import type { Form, FormResponse } from '@/types/form';
+
+
+const answerValueSchema = z.union([
+  z.string(),
+  z.number(),
+  z.array(z.string()),
+  z.null(),
+]);
+
+const createSubmissionSchema = (form: Form | null) =>
+  z
+    .object({
+      answers: z.record(z.string(), answerValueSchema),
+      googleToken: z.string().min(1, 'Please verify your identity before submitting'),
+    })
+    .superRefine((data, ctx) => {
+      if (!form) return;
+      for (const question of form.questions) {
+        if (!question.required) continue;
+        const value = data.answers[question.id];
+        const isMissing =
+          value === undefined ||
+          value === null ||
+          (typeof value === 'string' && value.trim() === '') ||
+          (Array.isArray(value) && value.length === 0);
+        if (isMissing) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['answers', question.id],
+            message: `Please fill out: "${question.title}"`,
+          });
+        }
+      }
+    });
+
+type SubmissionPayload = {
+  answers: Record<string, z.infer<typeof answerValueSchema>>;
+  googleToken: string;
+};
 
 export function PublicForm() {
   const { formId } = useParams<{ formId: string }>();
@@ -16,7 +59,14 @@ export function PublicForm() {
   const [form, setForm] = useState<Form | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [progress, setProgress] = useState(0);
+  const validationSchema = useMemo(() => createSubmissionSchema(form), [form]);
+  const { setValue, handleSubmit: handleValidationSubmit } = useForm<SubmissionPayload>({
+    resolver: zodResolver(validationSchema),
+    defaultValues: {
+      answers: {},
+      googleToken: '',
+    },
+  });
 
   const loadForm = useCallback(async () => {
     if (!formId) return;
@@ -35,122 +85,69 @@ export function PublicForm() {
       setError('Connection failed');
     } finally {
       setLoading(false);
-      setProgress(100);
     }
   }, [formId, getForm]);
 
   useEffect(() => {
     if (formId) {
-      loadForm();
-      // Simulate progress for visual effect
-      const interval = setInterval(() => {
-        setProgress(prev => (prev >= 100 ? 100 : prev + Math.random() * 15));
-      }, 200);
-      return () => clearInterval(interval);
+      loadForm();  
+      return;
     }
     setError('Form not found');
     setLoading(false);
-    setProgress(100);
   }, [formId, loadForm]);
 
-  const handleSubmit = async (answers: Record<string, unknown>, googleToken: string) => {
-    if (!formId) return;
-    const responseData: FormResponse['answers'] = Object.entries(answers).map(
-      ([questionId, value]) => ({
-        questionId,
-        value: value as FormResponse['answers'][number]['value'],
-      })
-    );
-    await submitResponse(formId, { 
-      answers: responseData, 
-      googleToken: googleToken 
-    });
+  const getFirstErrorMessage = (errors: FieldErrors<SubmissionPayload>) => {
+    const answerErrors = errors.answers;
+    if (answerErrors) {
+      for (const answerError of Object.values(answerErrors)) {
+        if (answerError && typeof answerError === 'object' && 'message' in answerError) {
+          const message = answerError.message;
+          if (typeof message === 'string') return message;
+        }
+      }
+    }
+    return errors.googleToken?.message || null;
   };
 
-  // --- Loading State ---
+  const submitValidatedResponse = handleValidationSubmit(
+    async (values) => {
+      if (!formId) return;
+      const responseData: FormResponse['answers'] = Object.entries(values.answers).map(
+        ([questionId, value]) => ({
+          questionId,
+          value: value as FormResponse['answers'][number]['value'],
+        })
+      );
+      await submitResponse(formId, {
+        answers: responseData,
+        googleToken: values.googleToken,
+      });
+    },
+    (errors) => {
+      const errorMessage =
+        getFirstErrorMessage(errors) || 'Please complete all required fields before submitting';
+      toast.error(errorMessage);
+    }
+  );
+
+  const handleSubmit = async (answers: Record<string, unknown>, googleToken: string) => {
+    setValue('answers', answers as SubmissionPayload['answers'], { shouldValidate: true });
+    setValue('googleToken', googleToken, { shouldValidate: true });
+    await submitValidatedResponse();
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] flex flex-col items-center justify-center relative overflow-hidden">
-        {/* Animated background grid */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:60px_60px]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#0a0a0f_100%)]" />
-        
-        {/* Glowing orbs */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/20 rounded-full blur-[128px] animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-600/10 rounded-full blur-[128px] animate-pulse delay-1000" />
-
+      <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4">
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="relative z-10 flex flex-col items-center max-w-md w-full px-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="w-full max-w-sm rounded-2xl  p-8 backdrop-blur-xl"
         >
-          {/* Logo animation */}
-          <div className="relative mb-8">
-            <div className="absolute inset-0 bg-indigo-500/30 blur-2xl rounded-full animate-pulse" />
-            <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-cyan-500/20 border border-indigo-500/30 flex items-center justify-center backdrop-blur-sm">
-              <Fingerprint className="w-10 h-10 text-indigo-400" />
-            </div>
-            
-            {/* Orbiting dots */}
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-              className="absolute inset-0 -m-4"
-            >
-              <div className="absolute top-0 left-1/2 w-2 h-2 bg-cyan-400 rounded-full shadow-lg shadow-cyan-400/50" />
-            </motion.div>
-            <motion.div
-              animate={{ rotate: -360 }}
-              transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
-              className="absolute inset-0 -m-8"
-            >
-              <div className="absolute bottom-0 right-1/2 w-1.5 h-1.5 bg-indigo-400 rounded-full shadow-lg shadow-indigo-400/50" />
-            </motion.div>
-          </div>
-
-          {/* Progress bar */}
-          <div className="w-full max-w-xs mb-6">
-            <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-              <motion.div 
-                className="h-full bg-gradient-to-r from-indigo-500 to-cyan-500"
-                initial={{ width: 0 }}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.3 }}
-              />
-            </div>
-            <div className="flex justify-between mt-2 text-[10px] font-mono text-white/30 uppercase tracking-wider">
-              <span>Initializing</span>
-              <span>{Math.round(progress)}%</span>
-            </div>
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="text-center"
-          >
-            <h2 className="text-white/90 font-medium mb-2">Secure Connection</h2>
-            <p className="text-white/40 text-sm">Establishing encrypted channel...</p>
-          </motion.div>
-
-          {/* Loading indicators */}
-          <div className="flex items-center gap-3 mt-8">
-            {[0, 1, 2].map((i) => (
-              <motion.div
-                key={i}
-                animate={{ 
-                  scale: [1, 1.2, 1],
-                  opacity: [0.3, 1, 0.3]
-                }}
-                transition={{ 
-                  duration: 1.5, 
-                  repeat: Infinity, 
-                  delay: i * 0.2 
-                }}
-                className="w-2 h-2 rounded-full bg-indigo-500"
-              />
-            ))}
+          <div className="flex flex-col items-center gap-3 text-center">
+            <Spinner className="size-6 text-indigo-400" />
+            <h2 className="text-white/90 font-medium">Loading form</h2>
           </div>
         </motion.div>
       </div>
