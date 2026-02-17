@@ -12,7 +12,7 @@ import {
   Search,
   Clock,
 } from 'lucide-react';
-import { ApiError, formsApi } from '../lib/api';
+import { ApiError, formsApi } from '@/api';
 import type { Form, FormResponse, Question, Answer } from '@/types/form';
 
 type FormResponseRow = FormResponse & { respondentEmail?: string };

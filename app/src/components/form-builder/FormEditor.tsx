@@ -31,10 +31,6 @@ import {
   Redo2,
   Download,
   Loader,
-  Image,
-  Building2,
-  Sparkles,
-  Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,466 +43,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 import { QuestionTypesPanel } from "./QuestionTypesPanel";
 import { QuestionCard } from "./QuestionCard";
 import { FormPreview } from "./FormPreview";
+import { MobileActionBar, SettingsContent } from "@/components/form-editor";
 import { useForms } from "@/hooks/useForms";
-import { uploadFile } from "@/lib/api";
+import { uploadFile } from "@/api";
 import type { Form, Question, QuestionType } from "@/types/form";
 import { DEFAULT_QUESTION } from "@/types/form";
 import { generateId } from "@/utils/id";
 import { toast } from "sonner";
 
-// --- FIX START: SettingsContent moved outside FormEditor ---
-
-interface SettingsContentProps {
-  form: Form;
-  onUpdateSettings: (updates: Partial<Form["settings"]>) => void;
-  onUploadThemeAsset: (
-    target: "logoUrl" | "bannerUrl",
-    file: File,
-  ) => Promise<void>;
-  isThemeAssetUploading: boolean;
-}
-
-const SettingsContent = ({
-  form,
-  onUpdateSettings,
-  onUploadThemeAsset,
-  isThemeAssetUploading,
-}: SettingsContentProps) => {
-  const logoInputRef = useRef<HTMLInputElement | null>(null);
-  const backgroundInputRef = useRef<HTMLInputElement | null>(null);
-  const bannerImageUrl =
-    form.settings.theme.bannerUrl || form.settings.theme.backgroundImageUrl;
-  const bannerPositionX =
-    typeof form.settings.theme.bannerPositionX === "number"
-      ? form.settings.theme.bannerPositionX
-      : 50;
-  const bannerPositionY =
-    typeof form.settings.theme.bannerPositionY === "number"
-      ? form.settings.theme.bannerPositionY
-      : 50;
-  const emailNotification = form.settings.emailNotification || {
-    enabled: false,
-    subject: "Your response to {{formTitle}} was received",
-    message:
-      'Hi {{email}},\n\nThank you for completing "{{formTitle}}". We have recorded your submission on {{submittedAt}}.',
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="space-y-4">
-        <div className="rounded-xl border border-white/10 bg-zinc-900 p-3">
-          <div className="mb-3 flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/20">
-              <Building2 className="h-4 w-4 text-indigo-300" />
-            </div>
-            <div>
-              <Label className="text-sm font-medium text-white">Branding</Label>
-                <p className="text-xs text-zinc-500">Logo, hero background, and labels</p>
-            </div>
-          </div>
-          <div className="space-y-3">
-            <Input
-              value={form.settings.theme.brandName || ""}
-              onChange={(e) =>
-                onUpdateSettings({
-                  theme: {
-                    ...form.settings.theme,
-                    brandName: e.target.value,
-                  },
-                })
-              }
-              placeholder="Brand name (optional)"
-              className="h-9 border-white/10 bg-zinc-950 text-zinc-100"
-            />
-            <Input
-              value={form.settings.theme.brandTagline || ""}
-              onChange={(e) =>
-                onUpdateSettings({
-                  theme: {
-                    ...form.settings.theme,
-                    brandTagline: e.target.value,
-                  },
-                })
-              }
-              placeholder="Brand tagline (optional)"
-              className="h-9 border-white/10 bg-zinc-950 text-zinc-100"
-            />
-            <div className="grid grid-cols-1 gap-2">
-              <button
-                type="button"
-                onClick={() => logoInputRef.current?.click()}
-                disabled={isThemeAssetUploading}
-                className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-white/15 bg-zinc-950 px-3 text-sm text-zinc-200 hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <Sparkles className="h-4 w-4" />
-                {form.settings.theme.logoUrl ? "Replace Logo" : "Upload Logo"}
-              </button>
-              <button
-                type="button"
-                onClick={() => backgroundInputRef.current?.click()}
-                disabled={isThemeAssetUploading}
-                className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-white/15 bg-zinc-950 px-3 text-sm text-zinc-200 hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <Image className="h-4 w-4" />
-                {form.settings.theme.bannerUrl || form.settings.theme.backgroundImageUrl
-                  ? "Replace Banner Image"
-                  : "Upload Banner Image"}
-              </button>
-            </div>
-            <p className="text-xs text-zinc-500">
-              Banner image appears at the top of the public form.
-            </p>
-            {bannerImageUrl && (
-              <div className="space-y-3 rounded-lg border border-white/10 bg-zinc-950/70 p-3">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-medium text-zinc-300">
-                    Horizontal Position
-                  </Label>
-                  <span className="text-xs text-zinc-500">{bannerPositionX}%</span>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  step={1}
-                  value={bannerPositionX}
-                  onChange={(e) =>
-                    onUpdateSettings({
-                      theme: {
-                        ...form.settings.theme,
-                        bannerPositionX: Number(e.target.value),
-                      },
-                    })
-                  }
-                  className="w-full accent-indigo-400"
-                />
-
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-medium text-zinc-300">
-                    Vertical Position
-                  </Label>
-                  <span className="text-xs text-zinc-500">{bannerPositionY}%</span>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  step={1}
-                  value={bannerPositionY}
-                  onChange={(e) =>
-                    onUpdateSettings({
-                      theme: {
-                        ...form.settings.theme,
-                        bannerPositionY: Number(e.target.value),
-                      },
-                    })
-                  }
-                  className="w-full accent-indigo-400"
-                />
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    onUpdateSettings({
-                      theme: {
-                        ...form.settings.theme,
-                        bannerPositionX: 50,
-                        bannerPositionY: 50,
-                      },
-                    })
-                  }
-                  className="inline-flex h-8 items-center justify-center rounded-md border border-white/15 bg-zinc-900 px-3 text-xs text-zinc-300 hover:bg-zinc-800"
-                >
-                  Reset Banner Position
-                </button>
-              </div>
-            )}
-            {(form.settings.theme.logoUrl ||
-              form.settings.theme.bannerUrl ||
-              form.settings.theme.backgroundImageUrl) && (
-              <div className="space-y-2">
-                {form.settings.theme.logoUrl && (
-                  <p className="truncate text-xs text-zinc-500">
-                    Logo: {form.settings.theme.logoUrl}
-                  </p>
-                )}
-                {(form.settings.theme.bannerUrl ||
-                  form.settings.theme.backgroundImageUrl) && (
-                  <p className="truncate text-xs text-zinc-500">
-                    Banner:{" "}
-                    {form.settings.theme.bannerUrl ||
-                      form.settings.theme.backgroundImageUrl}
-                  </p>
-                )}
-              </div>
-            )}
-            <input
-              ref={logoInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  void onUploadThemeAsset("logoUrl", file);
-                }
-                e.target.value = "";
-              }}
-            />
-            <input
-              ref={backgroundInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  void onUploadThemeAsset("bannerUrl", file);
-                }
-                e.target.value = "";
-              }}
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between rounded-xl border border-white/10 bg-zinc-900 p-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/20">
-              <Eye className="h-4 w-4 text-indigo-400" />
-            </div>
-            <div>
-              <Label
-                htmlFor="progress-bar"
-                className="cursor-pointer text-sm font-medium text-white"
-              >
-                Progress Bar
-              </Label>
-              <p className="text-xs text-zinc-500">Show completion progress</p>
-            </div>
-          </div>
-          <Switch
-            id="progress-bar"
-            checked={form.settings.showProgressBar}
-            onCheckedChange={(checked) =>
-              onUpdateSettings({ showProgressBar: checked })
-            }
-            className="data-[state=checked]:bg-indigo-500"
-          />
-        </div>
-
-        <div className="flex items-center justify-between rounded-xl border border-white/10 bg-zinc-900 p-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/20">
-              <Copy className="h-4 w-4 text-cyan-400" />
-            </div>
-            <div>
-              <Label
-                htmlFor="multiple-responses"
-                className="cursor-pointer text-sm font-medium text-white"
-              >
-                Multiple Responses
-              </Label>
-              <p className="text-xs text-zinc-500">
-                Allow users to submit multiple times
-              </p>
-            </div>
-          </div>
-          <Switch
-            id="multiple-responses"
-            checked={form.settings.allowMultipleResponses}
-            onCheckedChange={(checked) =>
-              onUpdateSettings({ allowMultipleResponses: checked })
-            }
-            className="data-[state=checked]:bg-cyan-500"
-          />
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        <Label className="text-sm font-medium text-white">
-          Confirmation Message
-        </Label>
-        <Textarea
-          value={form.settings.confirmationMessage}
-          onChange={(e) =>
-            onUpdateSettings({ confirmationMessage: e.target.value })
-          }
-          placeholder="Thank you for your response!"
-          className="min-h-[100px] resize-none rounded-xl border-white/10 bg-zinc-900 text-white placeholder:text-zinc-600 focus:border-indigo-500/50 focus:ring-indigo-500/20"
-        />
-      </div>
-
-      <div className="space-y-4 rounded-xl border border-white/10 bg-zinc-900 p-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/20">
-              <Mail className="h-4 w-4 text-emerald-300" />
-            </div>
-            <div>
-              <Label
-                htmlFor="submission-email-receipt"
-                className="cursor-pointer text-sm font-medium text-white"
-              >
-                Email Receipt
-              </Label>
-              <p className="text-xs text-zinc-500">
-                Send a custom email after successful submission
-              </p>
-            </div>
-          </div>
-          <Switch
-            id="submission-email-receipt"
-            checked={emailNotification.enabled}
-            onCheckedChange={(checked) =>
-              onUpdateSettings({
-                emailNotification: {
-                  ...emailNotification,
-                  enabled: checked,
-                },
-              })
-            }
-            className="data-[state=checked]:bg-emerald-500"
-          />
-        </div>
-
-        {emailNotification.enabled && (
-          <div className="space-y-3 border-t border-white/10 pt-3">
-            <Input
-              value={emailNotification.subject}
-              onChange={(e) =>
-                onUpdateSettings({
-                  emailNotification: {
-                    ...emailNotification,
-                    subject: e.target.value,
-                  },
-                })
-              }
-              placeholder="Email subject"
-              className="h-9 border-white/10 bg-zinc-950 text-zinc-100"
-            />
-            <Textarea
-              value={emailNotification.message}
-              onChange={(e) =>
-                onUpdateSettings({
-                  emailNotification: {
-                    ...emailNotification,
-                    message: e.target.value,
-                  },
-                })
-              }
-              placeholder="Email message"
-              className="min-h-[120px] resize-none rounded-xl border-white/10 bg-zinc-950 text-white placeholder:text-zinc-600"
-            />
-            <p className="text-xs text-zinc-500">
-              Variables: {"{{email}}"}, {"{{formTitle}}"}, {"{{submittedAt}}"}
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// --- FIX END ---
-
 interface FormEditorProps {
   form: Form;
   onBack: () => void;
 }
-
-interface MobileActionBarProps {
-  form: Form;
-  onAddQuestion: (type: QuestionType) => void;
-  onUpdateSettings: (updates: Partial<Form["settings"]>) => void;
-  onUploadThemeAsset: (
-    target: "logoUrl" | "bannerUrl",
-    file: File,
-  ) => Promise<void>;
-  isThemeAssetUploading: boolean;
-}
-
-const MobileActionBar = ({
-  form,
-  onAddQuestion,
-  onUpdateSettings,
-  onUploadThemeAsset,
-  isThemeAssetUploading,
-}: MobileActionBarProps) => {
-  const [showMobileAdd, setShowMobileAdd] = useState(false);
-  const [showMobileSettings, setShowMobileSettings] = useState(false);
-
-  return (
-    <div className="lg:hidden grid grid-cols-2 gap-3 mb-2 sticky top-0 z-20 pb-2">
-      <Sheet open={showMobileAdd} onOpenChange={setShowMobileAdd}>
-        <SheetTrigger asChild>
-          <Button className="w-full bg-zinc-100 text-gray-900 hover:bg-zinc-200 shadow-lg shadow-indigo-500/20">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Question
-          </Button>
-        </SheetTrigger>
-        <SheetContent
-          side="bottom"
-          className="h-[70vh] bg-zinc-950 border-white/10 p-0 rounded-t-2xl overflow-y-auto scrollbar-hide"
-        >
-          <div className="p-6">
-            <SheetHeader className="mb-4 text-left">
-              <SheetTitle className="text-white">
-                Select Question Type
-              </SheetTitle>
-            </SheetHeader>
-            <QuestionTypesPanel
-              onAddQuestion={(type) => {
-                onAddQuestion(type);
-                setShowMobileAdd(false);
-              }}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
-
-      <Sheet open={showMobileSettings} onOpenChange={setShowMobileSettings}>
-        <SheetTrigger asChild>
-          <Button
-            variant="outline"
-            className="w-full bg-zinc-900 border-white/10 text-white hover:bg-zinc-800"
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            Settings
-          </Button>
-        </SheetTrigger>
-        <SheetContent
-          side="right"
-          className="w-[70%] px-5 sm:w-[400px] bg-zinc-950 border-white/10"
-        >
-          <SheetHeader>
-            <SheetTitle className="text-white flex items-center gap-2">
-              <Settings className="w-5 h-5 text-indigo-400" />
-              Form Settings
-            </SheetTitle>
-          </SheetHeader>
-          <div className="mt-6">
-            <SettingsContent
-              form={form}
-              onUpdateSettings={onUpdateSettings}
-              onUploadThemeAsset={onUploadThemeAsset}
-              isThemeAssetUploading={isThemeAssetUploading}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
-    </div>
-  );
-};
 
 const escapeHtml = (value: string) =>
   value
@@ -826,7 +377,6 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
 
   return (
     <div className="min-h-[60vh] rounded-lg border border-zinc-800 bg-zinc-950 text-white relative overflow-hidden flex flex-col">
-
       {/* Header */}
       <header className="z-30 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1053,210 +603,215 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
       <main className="flex-1 relative z-10 w-full px-4 py-6 sm:px-6 lg:px-8">
         {previewMode ? (
           <div className="w-full flex flex-col items-center">
-              {/* Preview Controls */}
-              <div className="flex items-center justify-center gap-2 mb-6">
-                <div className="flex bg-zinc-900 rounded-lg p-1 border border-white/10">
-                  <button
-                    onClick={() => setDevicePreview("desktop")}
-                    className={`px-3 py-2 rounded-md transition-all text-sm font-medium flex items-center gap-2 ${
-                      devicePreview === "desktop"
-                        ? "bg-zinc-800 text-white"
-                        : "text-zinc-500 hover:text-zinc-400"
-                    }`}
-                  >
-                    <Monitor className="w-4 h-4" />
-                    <span>Desktop</span>
-                  </button>
-                  <button
-                    onClick={() => setDevicePreview("mobile")}
-                    className={`px-3 py-2 rounded-md transition-all text-sm font-medium flex items-center gap-2 ${
-                      devicePreview === "mobile"
-                        ? "bg-zinc-800 text-white"
-                        : "text-zinc-500 hover:text-zinc-400"
-                    }`}
-                  >
-                    <Smartphone className="w-4 h-4" />
-                    <span>Mobile</span>
-                  </button>
-                </div>
+            {/* Preview Controls */}
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <div className="flex bg-zinc-900 rounded-lg p-1 border border-white/10">
+                <button
+                  onClick={() => setDevicePreview("desktop")}
+                  className={`px-3 py-2 rounded-md transition-all text-sm font-medium flex items-center gap-2 ${
+                    devicePreview === "desktop"
+                      ? "bg-zinc-800 text-white"
+                      : "text-zinc-500 hover:text-zinc-400"
+                  }`}
+                >
+                  <Monitor className="w-4 h-4" />
+                  <span>Desktop</span>
+                </button>
+                <button
+                  onClick={() => setDevicePreview("mobile")}
+                  className={`px-3 py-2 rounded-md transition-all text-sm font-medium flex items-center gap-2 ${
+                    devicePreview === "mobile"
+                      ? "bg-zinc-800 text-white"
+                      : "text-zinc-500 hover:text-zinc-400"
+                  }`}
+                >
+                  <Smartphone className="w-4 h-4" />
+                  <span>Mobile</span>
+                </button>
               </div>
+            </div>
 
-              {/* Preview Container */}
-              <div
-                className={`w-full transition-all duration-500 ${devicePreview === "mobile" ? "max-w-[375px]" : "max-w-4xl"}`}
-              >
-                <div className="bg-zinc-950 rounded-2xl border border-white/10 shadow-2xl shadow-black/50 overflow-hidden">
-                  <div className="h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500" />
-                  <div className="p-4 sm:p-8 overflow-x-hidden">
-                    <FormPreview form={form} />
-                  </div>
+            {/* Preview Container */}
+            <div
+              className={`w-full transition-all duration-500 ${devicePreview === "mobile" ? "max-w-[375px]" : "max-w-4xl"}`}
+            >
+              <div className="bg-zinc-950 rounded-2xl border border-white/10 shadow-2xl shadow-black/50 overflow-hidden">
+                <div className="h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500" />
+                <div
+                  className={`overflow-x-hidden ${devicePreview === "mobile" ? "p-3" : "p-8"}`}
+                >
+                  <FormPreview form={form} previewDevice={devicePreview} />
                 </div>
               </div>
+            </div>
           </div>
         ) : (
           <div className="flex flex-col lg:flex-row gap-6 relative">
-              {/* Mobile Action Bar */}
-              <MobileActionBar
-                form={form}
-                onAddQuestion={handleAddQuestion}
-                onUpdateSettings={handleUpdateSettings}
-                onUploadThemeAsset={handleUploadThemeAsset}
-                isThemeAssetUploading={isThemeAssetUploading}
-              />
+            {/* Mobile Action Bar */}
+            <MobileActionBar
+              form={form}
+              onAddQuestion={handleAddQuestion}
+              onUpdateSettings={handleUpdateSettings}
+              onUploadThemeAsset={handleUploadThemeAsset}
+              isThemeAssetUploading={isThemeAssetUploading}
+            />
 
-              {/* Left Sidebar - Tools (Desktop Only) */}
-              <div className="hidden lg:block w-64 flex-shrink-0 scrollbar-hide">
-                <div className="sticky top-24 space-y-4 ">
-                  <div className="bg-zinc-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-4 ">
-                    <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4 px-2">
-                      Add Questions
-                    </h3>
-                    <QuestionTypesPanel onAddQuestion={handleAddQuestion} />
-                  </div>
+            {/* Left Sidebar - Tools (Desktop Only) */}
+            <div className="hidden lg:block w-64 flex-shrink-0 scrollbar-hide">
+              <div className="sticky top-24 space-y-4 ">
+                <div className="bg-zinc-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-4 ">
+                  <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4 px-2">
+                    Add Questions
+                  </h3>
+                  <QuestionTypesPanel onAddQuestion={handleAddQuestion} />
+                </div>
 
-                  <div className="bg-zinc-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-4">
-                    <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4 px-2">
-                      History
-                    </h3>
-                    <div className="flex gap-2">
-                      <button className="flex-1 p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors flex items-center justify-center gap-2">
-                        <Undo2 className="w-4 h-4" />
-                        <span className="text-xs">Undo</span>
-                      </button>
-                      <button className="flex-1 p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors flex items-center justify-center gap-2">
-                        <Redo2 className="w-4 h-4" />
-                        <span className="text-xs">Redo</span>
-                      </button>
-                    </div>
+                <div className="bg-zinc-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-4">
+                  <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4 px-2">
+                    History
+                  </h3>
+                  <div className="flex gap-2">
+                    <button className="flex-1 p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors flex items-center justify-center gap-2">
+                      <Undo2 className="w-4 h-4" />
+                      <span className="text-xs">Undo</span>
+                    </button>
+                    <button className="flex-1 p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors flex items-center justify-center gap-2">
+                      <Redo2 className="w-4 h-4" />
+                      <span className="text-xs">Redo</span>
+                    </button>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Center - Builder */}
-              <div className="flex-1 w-full min-w-0 max-w-3xl mx-auto">
-                {/* Form Header */}
-                <div className="relative group mb-6">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity blur-sm" />
-                  <div className="relative bg-zinc-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 hover:border-white/20 transition-colors">
-                    {isEditingFormHeader ? (
+            {/* Center - Builder */}
+            <div className="flex-1 w-full min-w-0 max-w-3xl mx-auto">
+              {/* Form Header */}
+              <div className="relative group mb-6">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity blur-sm" />
+                <div className="relative bg-zinc-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-4 sm:p-6 hover:border-white/20 transition-colors">
+                  {isEditingFormHeader ? (
+                    <div
+                      onBlur={(e) => {
+                        if (
+                          !e.currentTarget.contains(e.relatedTarget as Node)
+                        ) {
+                          setIsEditingFormHeader(false);
+                        }
+                      }}
+                    >
+                      <Input
+                        ref={formHeaderTitleInputRef}
+                        value={form.title}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            title: e.target.value,
+                          }))
+                        }
+                        placeholder="# Form Title"
+                        className="text-xl sm:text-2xl font-bold bg-transparent border-0 border-b border-transparent hover:border-white/10 focus:border-indigo-500/50 focus:ring-0 px-2 text-white placeholder:text-zinc-700 mb-4"
+                      />
+                      <Textarea
+                        value={form.description}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            description: e.target.value,
+                          }))
+                        }
+                        placeholder="Write your form intro in markdown..."
+                        className="bg-transparent border-0 border-b border-transparent hover:border-white/10 focus:border-indigo-500/50 focus:ring-0 px-2 text-white/70 placeholder:text-zinc-600 resize-y text-sm min-h-[60px]"
+                        rows={10}
+                      />
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingFormHeader(true)}
+                      className="block w-full text-left rounded-xl px-2 py-1 hover:bg-white/[0.03] transition-colors"
+                    >
                       <div
-                        onBlur={(e) => {
-                          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                            setIsEditingFormHeader(false);
-                          }
+                        className="space-y-3 text-zinc-200 leading-relaxed"
+                        dangerouslySetInnerHTML={{
+                          __html: renderMarkdownPreview(
+                            form.title?.trim()
+                              ? `# ${form.title}\n\n${form.description || ""}`
+                              : "# Untitled Form\n\nAdd a description to help respondents understand the purpose of this form...",
+                          ),
                         }}
-                      >
-                        <Input
-                          ref={formHeaderTitleInputRef}
-                          value={form.title}
-                          onChange={(e) =>
-                            setForm((prev) => ({ ...prev, title: e.target.value }))
-                          }
-                          placeholder="# Form Title"
-                          className="text-xl sm:text-2xl font-bold bg-transparent border-0 border-b border-transparent hover:border-white/10 focus:border-indigo-500/50 focus:ring-0 px-2 text-white placeholder:text-zinc-700 mb-4"
-                        />
-                        <Textarea
-                          value={form.description}
-                          onChange={(e) =>
-                            setForm((prev) => ({
-                              ...prev,
-                              description: e.target.value,
-                            }))
-                          }
-                          placeholder="Write your form intro in markdown..."
-                          className="bg-transparent border-0 border-b border-transparent hover:border-white/10 focus:border-indigo-500/50 focus:ring-0 px-2 text-white/70 placeholder:text-zinc-600 resize-y text-sm min-h-[60px]"
-                          rows={10}
-                        />
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setIsEditingFormHeader(true)}
-                        className="block w-full text-left rounded-xl px-2 py-1 hover:bg-white/[0.03] transition-colors"
-                      >
-                        <div
-                          className="space-y-3 text-zinc-200 leading-relaxed"
-                          dangerouslySetInnerHTML={{
-                            __html: renderMarkdownPreview(
-                              form.title?.trim()
-                                ? `# ${form.title}\n\n${form.description || ""}`
-                                : "# Untitled Form\n\nAdd a description to help respondents understand the purpose of this form...",
-                            ),
-                          }}
-                        />
-                        <p className="mt-4 text-xs text-zinc-500">
-                          Click to edit markdown
-                        </p>
-                      </button>
-                    )}
-                  </div>
+                      />
+                      <p className="mt-4 text-xs text-zinc-500">
+                        Click to edit markdown
+                      </p>
+                    </button>
+                  )}
                 </div>
+              </div>
 
-                {/* Questions List */}
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
+              {/* Questions List */}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={form.questions.map((q) => q.id)}
+                  strategy={verticalListSortingStrategy}
                 >
-                  <SortableContext
-                    items={form.questions.map((q) => q.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    {form.questions.map((question) => (
-                      <div key={question.id} className="mb-4">
-                          <QuestionCard
-                            question={question}
-                            isActive={activeQuestionId === question.id}
-                            onClick={() => setActiveQuestionId(question.id)}
-                            onUpdate={(updates) =>
-                              handleUpdateQuestion(question.id, updates)
-                            }
-                            onDelete={() => handleDeleteQuestion(question.id)}
-                            onDuplicate={() =>
-                              handleDuplicateQuestion(question.id)
-                            }
-                          />
-                      </div>
-                    ))}
-                  </SortableContext>
-                </DndContext>
-
-                {form.questions.length === 0 && (
-                  <div className="text-center py-16 bg-zinc-900/60 border border-dashed border-white/10 rounded-2xl">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-zinc-900 flex items-center justify-center">
-                      <Plus className="w-8 h-8 text-zinc-700" />
+                  {form.questions.map((question) => (
+                    <div key={question.id} className="mb-4">
+                      <QuestionCard
+                        question={question}
+                        isActive={activeQuestionId === question.id}
+                        onClick={() => setActiveQuestionId(question.id)}
+                        onUpdate={(updates) =>
+                          handleUpdateQuestion(question.id, updates)
+                        }
+                        onDelete={() => handleDeleteQuestion(question.id)}
+                        onDuplicate={() => handleDuplicateQuestion(question.id)}
+                      />
                     </div>
-                    <p className="text-zinc-500 font-medium mb-2">
-                      Start building your form
-                    </p>
-                    <p className="text-sm text-zinc-700 px-4">
-                      Add your first question using the controls{" "}
-                      {window.innerWidth < 1024 ? "above" : "to the left"}
-                    </p>
-                  </div>
-                )}
-              </div>
+                  ))}
+                </SortableContext>
+              </DndContext>
 
-              {/* Right Sidebar - Settings (Desktop Only) */}
-              <div className="hidden lg:block w-72 flex-shrink-0">
-                <div className="sticky top-24">
-                  <div className="bg-zinc-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-5">
-                    <div className="flex items-center gap-2 mb-6">
-                      <Settings className="w-4 h-4 text-indigo-400" />
-                      <h3 className="text-sm font-semibold text-white">
-                        Form Settings
-                      </h3>
-                    </div>
-                    {/* FIX: Usage of component in Desktop Sidebar */}
-                    <SettingsContent
-                      form={form}
-                      onUpdateSettings={handleUpdateSettings}
-                      onUploadThemeAsset={handleUploadThemeAsset}
-                      isThemeAssetUploading={isThemeAssetUploading}
-                    />
+              {form.questions.length === 0 && (
+                <div className="text-center py-16 bg-zinc-900/60 border border-dashed border-white/10 rounded-2xl">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-zinc-900 flex items-center justify-center">
+                    <Plus className="w-8 h-8 text-zinc-700" />
                   </div>
+                  <p className="text-zinc-500 font-medium mb-2">
+                    Start building your form
+                  </p>
+                  <p className="text-sm text-zinc-700 px-4">
+                    Add your first question using the controls{" "}
+                    {window.innerWidth < 1024 ? "above" : "to the left"}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Right Sidebar - Settings (Desktop Only) */}
+            <div className="hidden lg:block w-72 flex-shrink-0">
+              <div className="sticky top-24">
+                <div className="bg-zinc-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-5">
+                  <div className="flex items-center gap-2 mb-6">
+                    <Settings className="w-4 h-4 text-indigo-400" />
+                    <h3 className="text-sm font-semibold text-white">
+                      Form Settings
+                    </h3>
+                  </div>
+                  {/* FIX: Usage of component in Desktop Sidebar */}
+                  <SettingsContent
+                    form={form}
+                    onUpdateSettings={handleUpdateSettings}
+                    onUploadThemeAsset={handleUploadThemeAsset}
+                    isThemeAssetUploading={isThemeAssetUploading}
+                  />
                 </div>
               </div>
+            </div>
           </div>
         )}
       </main>

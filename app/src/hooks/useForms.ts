@@ -1,27 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { formsApi, ApiError } from '@/lib/api';
+import { formsApi, ApiError } from '@/api';
 import type { Form, FormResponse } from '@/types/form';
 import { toast } from 'sonner';
+import type { UseFormsOptions, UseFormsReturn } from '@/hooks/useForms.types';
 
-interface UseFormsReturn {
-  forms: Form[];
-  loading: boolean;
-  error: string | null;
-  refetch: () => Promise<void>;
-  createForm: (form: Omit<Form, '_id'>) => Promise<Form | null>;
-  updateForm: (id: string, form: Partial<Form>) => Promise<Form | null>;
-  deleteForm: (id: string) => Promise<boolean>;
-  getForm: (id: string, options?: { suppressToast?: boolean }) => Promise<Form | null>;
-  submitResponse: (
-    id: string,
-    data: { answers: FormResponse['answers']; googleToken?: string }
-  ) => Promise<FormResponse | null>;
-  getResponses: (id: string) => Promise<FormResponse[]>;
-}
-
-interface UseFormsOptions {
-  autoFetch?: boolean;
-}
+const getApiErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof ApiError ? error.message : fallback;
 
 export function useForms({ autoFetch = true }: UseFormsOptions = {}): UseFormsReturn {
   const [forms, setForms] = useState<Form[]>([]);
@@ -35,7 +19,7 @@ export function useForms({ autoFetch = true }: UseFormsOptions = {}): UseFormsRe
       const data = await formsApi.getAll();
       setForms(data);
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'Failed to fetch forms';
+      const message = getApiErrorMessage(err, 'Failed to fetch forms');
       setError(message);
       toast.error(message);
     } finally {
@@ -58,7 +42,7 @@ export function useForms({ autoFetch = true }: UseFormsOptions = {}): UseFormsRe
       toast.success('Form created successfully!');
       return newForm;
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'Failed to create form';
+      const message = getApiErrorMessage(err, 'Failed to create form');
       toast.error(message);
       return null;
     }
@@ -73,7 +57,7 @@ export function useForms({ autoFetch = true }: UseFormsOptions = {}): UseFormsRe
       toast.success('Form updated successfully!');
       return updatedForm;
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'Failed to update form';
+      const message = getApiErrorMessage(err, 'Failed to update form');
       toast.error(message);
       return null;
     }
@@ -86,7 +70,7 @@ export function useForms({ autoFetch = true }: UseFormsOptions = {}): UseFormsRe
       toast.success('Form deleted successfully!');
       return true;
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'Failed to delete form';
+      const message = getApiErrorMessage(err, 'Failed to delete form');
       toast.error(message);
       return false;
     }
@@ -97,7 +81,7 @@ export function useForms({ autoFetch = true }: UseFormsOptions = {}): UseFormsRe
       const form = await formsApi.getById(id);
       return form;
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'Failed to fetch form';
+      const message = getApiErrorMessage(err, 'Failed to fetch form');
       if (!options?.suppressToast) {
         toast.error(message);
       }
@@ -120,7 +104,7 @@ export function useForms({ autoFetch = true }: UseFormsOptions = {}): UseFormsRe
         toast.success('Response submitted successfully!');
         return response;
       } catch (err) {
-        const message = err instanceof ApiError ? err.message : 'Failed to submit response';
+        const message = getApiErrorMessage(err, 'Failed to submit response');
         toast.error(message);
         return null;
       }
@@ -133,7 +117,7 @@ export function useForms({ autoFetch = true }: UseFormsOptions = {}): UseFormsRe
       const responses = await formsApi.getResponses(id);
       return responses;
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'Failed to fetch responses';
+      const message = getApiErrorMessage(err, 'Failed to fetch responses');
       toast.error(message);
       return [];
     }

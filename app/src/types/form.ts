@@ -51,6 +51,9 @@ export interface FormSettings {
   requireLogin: boolean;
   showProgressBar: boolean;
   confirmationMessage: string;
+  responseDeadlineAt?: string | null;
+  maxResponses?: number | null;
+  closedMessage?: string;
   emailNotification: FormEmailNotification;
   redirectUrl?: string;
   theme: FormTheme;
@@ -158,6 +161,9 @@ export const DEFAULT_FORM: Form = {
     requireLogin: false,
     showProgressBar: true,
     limitOneResponse: true,
+    responseDeadlineAt: null,
+    maxResponses: null,
+    closedMessage: "This form is no longer accepting responses.",
     confirmationMessage: 'Thank you for your response!',
     emailNotification: {
       enabled: false,

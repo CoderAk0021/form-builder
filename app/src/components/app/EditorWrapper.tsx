@@ -3,7 +3,7 @@ import { Navigate,useLocation, useParams } from "react-router-dom";
 import { Loader } from "lucide-react";
 import { FormEditor } from "../form-builder/FormEditor";
 import type { Form } from "@/types/form";
-import { formsApi } from "@/lib/api";
+import { formsApi } from "@/api";
 
 export default function EditorWrapper({ onBack }: { onBack: () => void }) {
   const location = useLocation();

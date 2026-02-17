@@ -1,17 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { 
+import {
   AlertCircle,
   Loader,
 } from 'lucide-react';
 import { FormPreview } from '@/components/form-builder/FormPreview';
 import { useForms } from '@/hooks/useForms';
+import { ApiError, formsApi } from '@/api';
 import type { Form, FormResponse } from '@/types/form';
 import { validateSubmissionPayload } from '@/lib/form-validation';
 
 export function PublicForm() {
   const { formId } = useParams<{ formId: string }>();
-  const { getForm, submitResponse } = useForms({ autoFetch: false });
+  const { submitResponse } = useForms({ autoFetch: false });
   const [form, setForm] = useState<Form | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +20,7 @@ export function PublicForm() {
   const loadForm = useCallback(async () => {
     if (!formId) return;
     try {
-      const foundForm = await getForm(formId, { suppressToast: true });
+      const foundForm = await formsApi.getById(formId);
       if (foundForm) {
         if (foundForm.isPublished) {
           setForm(foundForm);
@@ -29,12 +30,16 @@ export function PublicForm() {
       } else {
         setError('Form not found');
       }
-    } catch {
-      setError('Connection failed');
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError('Connection failed');
+      }
     } finally {
       setLoading(false);
     }
-  }, [formId, getForm]);
+  }, [formId]);
 
   useEffect(() => {
     if (formId) {
