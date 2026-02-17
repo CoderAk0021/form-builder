@@ -1,14 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
-import {
-  AlertCircle,
-  Loader,
-} from 'lucide-react';
-import { FormPreview } from '@/components/form-builder/FormPreview';
-import { useForms } from '@/hooks/useForms';
-import { ApiError, formsApi } from '@/api';
-import type { Form, FormResponse } from '@/types/form';
-import { validateSubmissionPayload } from '@/lib/form-validation';
+import { useState, useEffect, useCallback } from "react";
+import { useParams } from "react-router-dom";
+import { AlertCircle, Loader } from "lucide-react";
+import { FormPreview } from "@/components/form-preview";
+import { useForms } from "@/hooks/useForms";
+import { ApiError, formsApi } from "@/api";
+import type { Form, FormResponse } from "@/types/form";
+import { validateSubmissionPayload } from "@/lib/form-validation";
 
 export function PublicForm() {
   const { formId } = useParams<{ formId: string }>();
@@ -25,16 +22,16 @@ export function PublicForm() {
         if (foundForm.isPublished) {
           setForm(foundForm);
         } else {
-          setError('This form is currently unavailable');
+          setError("This form is currently unavailable");
         }
       } else {
-        setError('Form not found');
+        setError("Form not found");
       }
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
       } else {
-        setError('Connection failed');
+        setError("Connection failed");
       }
     } finally {
       setLoading(false);
@@ -43,14 +40,17 @@ export function PublicForm() {
 
   useEffect(() => {
     if (formId) {
-      loadForm();  
+      loadForm();
       return;
     }
-    setError('Invalid form identifier');
+    setError("Invalid form identifier");
     setLoading(false);
   }, [formId, loadForm]);
 
-  const handleSubmit = async (answers: Record<string, unknown>, googleToken?: string) => {
+  const handleSubmit = async (
+    answers: Record<string, unknown>,
+    googleToken?: string,
+  ) => {
     if (!form || !formId) return;
 
     const validation = validateSubmissionPayload(form, answers, googleToken);
@@ -59,15 +59,15 @@ export function PublicForm() {
       throw new Error(
         firstIssue
           ? `${firstIssue.questionTitle}: ${firstIssue.message}`
-          : 'Please complete all required fields',
+          : "Please complete all required fields",
       );
     }
 
-    const responseData: FormResponse['answers'] = Object.entries(answers).map(
+    const responseData: FormResponse["answers"] = Object.entries(answers).map(
       ([questionId, value]) => ({
         questionId,
-        value: value as FormResponse['answers'][number]['value'],
-      })
+        value: value as FormResponse["answers"][number]["value"],
+      }),
     );
 
     const response = await submitResponse(formId, {
@@ -76,7 +76,7 @@ export function PublicForm() {
     });
 
     if (!response) {
-      throw new Error('Failed to submit response');
+      throw new Error("Failed to submit response");
     }
   };
 
@@ -85,8 +85,8 @@ export function PublicForm() {
       <div className="flex min-h-screen items-center justify-center bg-[#060a12] p-4">
         <div className="rounded-xl border border-white/10 bg-black/30 px-5 py-4 text-sm text-zinc-300">
           <span className="inline-flex items-center gap-2">
-          <Loader className="h-4 w-4 animate-spin" />
-          Loading form
+            <Loader className="h-4 w-4 animate-spin" />
+            Loading form
           </span>
         </div>
       </div>
@@ -103,7 +103,8 @@ export function PublicForm() {
           </div>
           <h2 className="text-xl font-semibold text-zinc-100">{error}</h2>
           <p className="mt-2 text-sm text-zinc-400">
-            Unable to access the requested form. Please verify the URL or contact the administrator.
+            Unable to access the requested form. Please verify the URL or
+            contact the administrator.
           </p>
           <button
             onClick={() => window.location.reload()}
@@ -112,7 +113,7 @@ export function PublicForm() {
             Try Again
           </button>
           <p className="mt-5 text-xs font-mono uppercase text-zinc-600">
-            Ref: {formId ? formId.substring(0, 8).toUpperCase() : 'NULL'}
+            Ref: {formId ? formId.substring(0, 8).toUpperCase() : "NULL"}
           </p>
         </div>
       </div>
@@ -122,14 +123,11 @@ export function PublicForm() {
   if (!form) return null;
 
   return (
-    <div className="min-h-screen bg-[#080808] px-3 py-6 selection:bg-zinc-700 selection:text-zinc-100 sm:px-6 sm:py-8">
+    <div className="min-h-screen px-3 py-6 selection:bg-zinc-700 selection:text-zinc-100 sm:px-6 sm:py-8">
       <div className="mx-auto w-full max-w-[940px]">
-       
-         
-          <div className="relative">
-            <FormPreview form={form} onSubmit={handleSubmit} />
-          </div>
-        
+        <div className="relative">
+          <FormPreview form={form} onSubmit={handleSubmit} />
+        </div>
       </div>
     </div>
   );

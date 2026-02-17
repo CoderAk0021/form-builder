@@ -16,9 +16,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const refreshSession = useCallback(async () => {
     try {
       const response = await authApi.verify();
-      setUser(response.success ? (response.user ?? null) : null);
+      const nextUser = response.success ? (response.user ?? null) : null;
+      setUser(nextUser);
+      return Boolean(nextUser);
     } catch {
       setUser(null);
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -47,7 +50,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Continue logout flow even if server-side logout request fails.
     } finally {
       setUser(null);
-      window.location.href = "/login";
+      window.location.href = "/";
     }
   }, []);
 

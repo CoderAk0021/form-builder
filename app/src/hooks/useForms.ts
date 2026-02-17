@@ -98,7 +98,7 @@ export function useForms({ autoFetch = true }: UseFormsOptions = {}): UseFormsRe
         const response = await formsApi.submitResponse(id, data);
         setForms((prev) =>
           prev.map((f) =>
-            f.id === id ? { ...f, responseCount: f.responseCount + 1 } : f
+            f.id === id ? { ...f, responseCount: (f.responseCount || 0) + 1 } : f
           )
         );
         toast.success('Response submitted successfully!');
@@ -136,3 +136,4 @@ export function useForms({ autoFetch = true }: UseFormsOptions = {}): UseFormsRe
     getResponses,
   };
 }
+

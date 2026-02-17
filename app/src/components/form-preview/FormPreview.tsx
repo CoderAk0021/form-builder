@@ -14,7 +14,7 @@ import {
   validateSubmissionPayload,
 } from "@/lib/form-validation";
 import type { Answer } from "@/types/form";
-import { GoogleVerification } from "./GoogleVerification";
+import { GoogleVerification } from "@/components/form-builder/GoogleVerification";
 import { PreviewHeader } from "../form-preview/PreviewHeader";
 import { QuestionPreview } from "../form-preview/QuestionPreview";
 import {
@@ -161,7 +161,9 @@ export function FormPreview({
   };
 
   if (submitted) {
-    return <SubmittedState confirmationMessage={form.settings.confirmationMessage} />;
+    return (
+      <SubmittedState confirmationMessage={form.settings.confirmationMessage} />
+    );
   }
 
   if (alreadyResponded && !form.settings.allowMultipleResponses) {
@@ -203,20 +205,10 @@ export function FormPreview({
         )}
 
         {form.settings.limitOneResponse && !googleToken && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-5">
-            <div className="mb-3">
-              <p className="text-sm font-semibold text-zinc-100">
-                Secure Verification
-              </p>
-              <p className="text-xs text-zinc-400">
-                To protect branded forms, sign in with Google before continuing.
-              </p>
-            </div>
-            <GoogleVerification
-              key={`google-verification-${verificationResetKey}`}
-              onVerified={handleVerification}
-            />
-          </div>
+          <GoogleVerification
+            key={`google-verification-${verificationResetKey}`}
+            onVerified={handleVerification}
+          />
         )}
 
         {googleToken && (
@@ -251,7 +243,9 @@ export function FormPreview({
               </h3>
             )}
             {activePage.description && (
-              <p className="mt-1 text-sm text-zinc-400">{activePage.description}</p>
+              <p className="mt-1 text-sm text-zinc-400">
+                {activePage.description}
+              </p>
             )}
           </div>
         )}
@@ -278,7 +272,9 @@ export function FormPreview({
             <Button
               type="button"
               variant="outline"
-              onClick={() => setActivePageIndex((prev) => Math.max(prev - 1, 0))}
+              onClick={() =>
+                setActivePageIndex((prev) => Math.max(prev - 1, 0))
+              }
               disabled={activePageIndex === 0 || isSubmitting}
               className="h-10 border-white/15 bg-zinc-900/70 text-zinc-100 hover:bg-zinc-800"
             >

@@ -111,7 +111,7 @@ export default function ProtectedAppShell() {
             </div>
           </div>
 
-          <nav className="flex items-center gap-1 overflow-x-auto">
+          <nav className="flex items-center gap-2 overflow-x-auto">
             {tabs.map((tab) => {
               
               const baseClass =

@@ -43,9 +43,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { QuestionTypesPanel } from "./QuestionTypesPanel";
-import { QuestionCard } from "./QuestionCard";
-import { FormPreview } from "./FormPreview";
+import { QuestionTypesPanel } from "../form-editor/QuestionTypesPanel";
+import { QuestionCard } from "../form-editor/QuestionCard";
+import { FormPreview } from "@/components/form-preview";
 import { MobileActionBar, SettingsContent } from "@/components/form-editor";
 import { useForms } from "@/hooks/useForms";
 import { uploadFile } from "@/api";
@@ -158,7 +158,7 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
   const [isThemeAssetUploading, setIsThemeAssetUploading] = useState(false);
   const formHeaderTitleInputRef = useRef<HTMLInputElement | null>(null);
   const [devicePreview, setDevicePreview] = useState<"desktop" | "mobile">(
-    "desktop",
+    "mobile",
   );
   const { updateForm } = useForms();
 
@@ -604,7 +604,7 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
         {previewMode ? (
           <div className="w-full flex flex-col items-center">
             {/* Preview Controls */}
-            <div className="flex items-center justify-center gap-2 mb-6">
+            <div className="hidden md:flex items-center justify-center gap-2 mb-6">
               <div className="flex bg-zinc-900 rounded-lg p-1 border border-white/10">
                 <button
                   onClick={() => setDevicePreview("desktop")}
@@ -633,15 +633,12 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
 
             {/* Preview Container */}
             <div
-              className={`w-full transition-all duration-500 ${devicePreview === "mobile" ? "max-w-[375px]" : "max-w-4xl"}`}
+              className={`w-full ${devicePreview === "mobile" ? "max-w-[375px]" : "max-w-4xl"}`}
             >
-              <div className="bg-zinc-950 rounded-2xl border border-white/10 shadow-2xl shadow-black/50 overflow-hidden">
-                <div className="h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500" />
-                <div
-                  className={`overflow-x-hidden ${devicePreview === "mobile" ? "p-3" : "p-8"}`}
-                >
-                  <FormPreview form={form} previewDevice={devicePreview} />
-                </div>
+              <div
+                className={`overflow-x-hidden ${devicePreview === "mobile" ? "p-0" : "p-8"}`}
+              >
+                <FormPreview form={form} previewDevice={devicePreview} />
               </div>
             </div>
           </div>
@@ -710,7 +707,7 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
                           }))
                         }
                         placeholder="# Form Title"
-                        className="text-xl sm:text-2xl font-bold bg-transparent border-0 border-b border-transparent hover:border-white/10 focus:border-indigo-500/50 focus:ring-0 px-2 text-white placeholder:text-zinc-700 mb-4"
+                        className="text-md md:text-xl font-bold bg-transparent border-0 border-b border-transparent hover:border-white/10 focus:border-indigo-500/50 focus:ring-0 px-2 text-white placeholder:text-zinc-700 mb-4"
                       />
                       <Textarea
                         value={form.description}

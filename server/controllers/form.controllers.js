@@ -10,6 +10,34 @@ import { isValidObjectId,getAutoCloseReason, syncFormPublicationState, getClosed
 export async function handleGetAllForms(req, res) {
   try {
     const forms = await Form.find().sort({ createdAt: -1 });
+
+    const formIds = forms.map((form) => form._id);
+    const responseCounts = await Response.aggregate([
+      { $match: { formId: { $in: formIds } } },
+      { $group: { _id: "$formId", count: { $sum: 1 } } },
+    ]);
+    const countMap = new Map(
+      responseCounts.map((item) => [String(item._id), Number(item.count) || 0]),
+    );
+
+    const countSyncOps = [];
+    forms.forEach((form) => {
+      const actualCount = countMap.get(String(form._id)) || 0;
+      if (Number(form.responseCount || 0) !== actualCount) {
+        countSyncOps.push({
+          updateOne: {
+            filter: { _id: form._id },
+            update: { $set: { responseCount: actualCount } },
+          },
+        });
+      }
+      form.responseCount = actualCount;
+    });
+
+    if (countSyncOps.length > 0) {
+      await Form.bulkWrite(countSyncOps);
+    }
+
     await Promise.all(forms.map((form) => syncFormPublicationState(form)));
     res.json(forms);
   } catch (error) {
@@ -167,9 +195,17 @@ export async function handleSubmitAResponse(req, res) {
     });
 
     await response.save();
-    form.responseCount += 1;
-    await form.save();
-    await syncFormPublicationState(form);
+    await Form.updateOne(
+      { _id: form._id },
+      { $inc: { responseCount: 1 } },
+    );
+
+    const refreshedForm = await Form.findById(form._id);
+    if (refreshedForm) {
+      await syncFormPublicationState(refreshedForm);
+      form.responseCount = refreshedForm.responseCount;
+      form.isPublished = refreshedForm.isPublished;
+    }
 
     const emailSettings = form.settings?.emailNotification;
     const shouldSendReceipt = Boolean(
@@ -242,3 +278,5 @@ export async function handleGetMailStatus(req, res) {
     return res.status(500).json({ message: "Failed to read mail configuration status" });
   }
 }
+
+

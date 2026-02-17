@@ -8,7 +8,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { QuestionTypesPanel } from "@/components/form-builder/QuestionTypesPanel";
+import { QuestionTypesPanel } from "@/components/form-editor/QuestionTypesPanel";
 import { SettingsContent } from "./SettingsContent";
 import type { Form, QuestionType } from "@/types/form";
 

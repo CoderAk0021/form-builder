@@ -3,7 +3,7 @@ import { LoginPage } from "@/pages/LoginPage";
 import { PublicForm } from "@/pages/PublicForm";
 import { Dashboard } from "@/pages/Dashboard";
 import { LandingPage } from "@/pages/LandingPage";
-import ProtectedRoute from "../ProtectedRoute";
+import ProtectedRoute from "./ProtectedRoute";
 import { FormResponses } from "@/pages/FormResponses";
 import EditorWrapper from "./EditorWrapper";
 import ProtectedAppShell from "./ProtectedAppShell";
