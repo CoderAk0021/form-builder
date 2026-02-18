@@ -1,6 +1,6 @@
 import type { Form, FormResponse } from "@/types/form";
 import { apiRequest } from "./client";
-import type { MailStatusResponse } from "./types";
+import type { MailStatusResponse, TestUserActivity } from "./types";
 
 type ApiPayload = Record<string, unknown>;
 
@@ -63,6 +63,10 @@ export const formsApi = {
 
   getMailStatus: async (): Promise<MailStatusResponse> => {
     return apiRequest<MailStatusResponse>("/forms/mail/status");
+  },
+
+  getTestUserActivities: async (): Promise<TestUserActivity[]> => {
+    return apiRequest<TestUserActivity[]>("/forms/test-users/activities");
   },
 
   submitResponse: async (

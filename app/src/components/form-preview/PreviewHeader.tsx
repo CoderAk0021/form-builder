@@ -46,7 +46,7 @@ export function PreviewHeader({
               <img
                 src={form.settings.theme.logoUrl}
                 alt="Brand logo"
-                className="h-10 w-10 rounded-md object-cover ring-1 ring-zinc-700"
+                className="h-10 w-10 rounded-full object-cover ring-1 ring-zinc-700"
               />
             )}
             <div>

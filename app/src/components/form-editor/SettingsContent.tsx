@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Eye,
   Copy,
@@ -13,9 +13,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import type { Form } from "@/types/form";
+import { renderMarkdownPreview } from "@/lib/form-header-markdown";
 
 interface SettingsContentProps {
   form: Form;
+  isTestUser: boolean;
   onUpdateSettings: (updates: Partial<Form["settings"]>) => void;
   onUploadThemeAsset: (
     target: "logoUrl" | "bannerUrl",
@@ -75,12 +77,16 @@ const toIsoFromLocalDateTime = (
 
 export const SettingsContent = ({
   form,
+  isTestUser,
   onUpdateSettings,
   onUploadThemeAsset,
   isThemeAssetUploading,
 }: SettingsContentProps) => {
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const backgroundInputRef = useRef<HTMLInputElement | null>(null);
+  const [emailEditorView, setEmailEditorView] = useState<"write" | "preview">(
+    "write",
+  );
   const bannerImageUrl =
     form.settings.theme.bannerUrl || form.settings.theme.backgroundImageUrl;
   const bannerPositionX =
@@ -95,7 +101,7 @@ export const SettingsContent = ({
     enabled: false,
     subject: "Your response to {{formTitle}} was received",
     message:
-      'Hi {{email}},\n\nThank you for completing "{{formTitle}}". We have recorded your submission on {{submittedAt}}.',
+      'Hi {{name}},\n\nThank you for completing "{{formTitle}}". We have recorded your submission on {{submittedAt}}.',
   };
   const responseDeadlineAt = form.settings.responseDeadlineAt;
   const deadlineDateValue = toLocalDateInputValue(responseDeadlineAt);
@@ -106,6 +112,67 @@ export const SettingsContent = ({
       ? form.settings.maxResponses
       : null;
   const hasMaxResponsesLimit = maxResponsesValue !== null;
+
+  const sampleEmailValues = useMemo(
+    () => ({
+      name: "Alex Johnson",
+      email: "alex.johnson@example.com",
+      formTitle: form.title || "Untitled Form",
+      submittedAt: new Date().toLocaleString(),
+    }),
+    [form.title],
+  );
+
+  const applyTokens = (value: string) =>
+    value
+      .replaceAll("{{name}}", sampleEmailValues.name)
+      .replaceAll("{{email}}", sampleEmailValues.email)
+      .replaceAll("{{formTitle}}", sampleEmailValues.formTitle)
+      .replaceAll("{{submittedAt}}", sampleEmailValues.submittedAt);
+
+  const emailMarkdownPreview = renderMarkdownPreview(
+    applyTokens(emailNotification.message || ""),
+  );
+
+  const insertTokenToSubject = (token: string) => {
+    onUpdateSettings({
+      emailNotification: {
+        ...emailNotification,
+        subject: `${emailNotification.subject || ""}${token}`,
+      },
+    });
+  };
+
+  const insertTokenToMessage = (token: string) => {
+    onUpdateSettings({
+      emailNotification: {
+        ...emailNotification,
+        message: `${emailNotification.message || ""}${token}`,
+      },
+    });
+  };
+
+  const applyEmailTemplate = (template: "simple" | "professional") => {
+    const next =
+      template === "simple"
+        ? {
+            subject: "Thanks for submitting {{formTitle}}",
+            message:
+              "Hi {{name}},\n\nThanks for your response to **{{formTitle}}**.\nWe recorded your submission on {{submittedAt}}.\n\nWe appreciate your time.",
+          }
+        : {
+            subject: "Submission confirmed: {{formTitle}}",
+            message:
+              "Hi {{name}},\n\nYour submission for **{{formTitle}}** has been received.\n\n- Submission time: {{submittedAt}}\n- Status: Confirmed\n\nIf this was not you, please contact support.\n\nRegards,\nEasy Forms Team",
+          };
+
+    onUpdateSettings({
+      emailNotification: {
+        ...emailNotification,
+        ...next,
+      },
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -153,7 +220,7 @@ export const SettingsContent = ({
               <button
                 type="button"
                 onClick={() => logoInputRef.current?.click()}
-                disabled={isThemeAssetUploading}
+                disabled={isThemeAssetUploading || isTestUser}
                 className="text-xs inline-flex h-9 items-center justify-center gap-2 rounded-md border border-white/15 bg-zinc-950 px-3 md:text-sm text-zinc-200 hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Sparkles className="h-4 w-4" />
@@ -162,7 +229,7 @@ export const SettingsContent = ({
               <button
                 type="button"
                 onClick={() => backgroundInputRef.current?.click()}
-                disabled={isThemeAssetUploading}
+                disabled={isThemeAssetUploading || isTestUser}
                 className="text-xs inline-flex h-9 items-center justify-center gap-2 rounded-md border border-white/15 bg-zinc-950 px-3 md:text-sm text-zinc-200 hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Image className="h-4 w-4" />
@@ -173,7 +240,9 @@ export const SettingsContent = ({
               </button>
             </div>
             <p className="text-xs text-zinc-500">
-              Banner image appears at the top of the public form.
+              {isTestUser
+                ? "Branding assets are fixed for test users."
+                : "Banner image appears at the top of the public form."}
             </p>
             {bannerImageUrl && (
               <div className="space-y-3 rounded-lg border border-white/10 bg-zinc-950/70 p-3">
@@ -505,9 +574,10 @@ export const SettingsContent = ({
               </p>
             </div>
           </div>
-          <Switch
-            id="submission-email-receipt"
-            checked={emailNotification.enabled}
+            <Switch
+              id="submission-email-receipt"
+              checked={isTestUser ? false : emailNotification.enabled}
+              disabled={isTestUser}
             onCheckedChange={(checked) =>
               onUpdateSettings({
                 emailNotification: {
@@ -520,7 +590,13 @@ export const SettingsContent = ({
           />
         </div>
 
-        {emailNotification.enabled && (
+        {isTestUser && (
+          <p className="text-xs text-zinc-500">
+            Email receipts are disabled for test users.
+          </p>
+        )}
+
+        {emailNotification.enabled && !isTestUser && (
           <div className="space-y-3 border-t border-white/10 pt-3">
             <Input
               value={emailNotification.subject}
@@ -535,21 +611,125 @@ export const SettingsContent = ({
               placeholder="Email subject"
               className="text-xs md:text-md h-9 border-white/10 bg-zinc-950 text-zinc-100"
             />
-            <Textarea
-              value={emailNotification.message}
-              onChange={(e) =>
-                onUpdateSettings({
-                  emailNotification: {
-                    ...emailNotification,
-                    message: e.target.value,
-                  },
-                })
-              }
-              placeholder="Email message"
-              className="text-xs md:text-md min-h-[120px] resize-none rounded-xl border-white/10 bg-zinc-950 text-white placeholder:text-zinc-600"
-            />
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => insertTokenToSubject(" {{formTitle}}")}
+                className="rounded-md border border-white/15 bg-zinc-950 px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-900"
+              >
+                + form title
+              </button>
+              <button
+                type="button"
+                onClick={() => insertTokenToSubject(" {{submittedAt}}")}
+                className="rounded-md border border-white/15 bg-zinc-950 px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-900"
+              >
+                + date/time
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => applyEmailTemplate("simple")}
+                className="rounded-md border border-white/15 bg-zinc-950 px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-900"
+              >
+                Use Simple Template
+              </button>
+              <button
+                type="button"
+                onClick={() => applyEmailTemplate("professional")}
+                className="rounded-md border border-white/15 bg-zinc-950 px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-900"
+              >
+                Use Professional Template
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 rounded-md border border-white/10 bg-zinc-950 p-1">
+              <button
+                type="button"
+                onClick={() => setEmailEditorView("write")}
+                className={`rounded px-2 py-1 text-xs ${
+                  emailEditorView === "write"
+                    ? "bg-zinc-800 text-zinc-100"
+                    : "text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                Write
+              </button>
+              <button
+                type="button"
+                onClick={() => setEmailEditorView("preview")}
+                className={`rounded px-2 py-1 text-xs ${
+                  emailEditorView === "preview"
+                    ? "bg-zinc-800 text-zinc-100"
+                    : "text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                Preview
+              </button>
+            </div>
+
+            {emailEditorView === "write" ? (
+              <>
+                <Textarea
+                  value={emailNotification.message}
+                  onChange={(e) =>
+                    onUpdateSettings({
+                      emailNotification: {
+                        ...emailNotification,
+                        message: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="Email message"
+                  className="text-xs md:text-md min-h-[120px] resize-none rounded-xl border-white/10 bg-zinc-950 text-white placeholder:text-zinc-600"
+                />
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => insertTokenToMessage("{{name}}")}
+                    className="rounded-md border border-white/15 bg-zinc-950 px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-900"
+                  >
+                    + {"{{name}}"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => insertTokenToMessage("{{formTitle}}")}
+                    className="rounded-md border border-white/15 bg-zinc-950 px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-900"
+                  >
+                    + {"{{formTitle}}"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => insertTokenToMessage("{{submittedAt}}")}
+                    className="rounded-md border border-white/15 bg-zinc-950 px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-900"
+                  >
+                    + {"{{submittedAt}}"}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="rounded-xl border border-white/10 bg-zinc-950 p-3">
+                <p className="mb-2 text-xs text-zinc-500">
+                  Preview with sample values
+                </p>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-zinc-100">
+                    {applyTokens(emailNotification.subject)}
+                  </p>
+                  <div
+                    className="prose prose-invert max-w-none text-sm"
+                    dangerouslySetInnerHTML={{ __html: emailMarkdownPreview }}
+                  />
+                </div>
+              </div>
+            )}
             <p className="text-xs md:text-md text-zinc-500">
-              Variables: {"{{email}}"}, {"{{formTitle}}"}, {"{{submittedAt}}"}
+              Variables: {"{{name}}"}, {"{{formTitle}}"}, {"{{submittedAt}}"}.
+              {" {{email}}"} still works for backward compatibility. Message
+              supports markdown (lists, bold, links, headings).
             </p>
           </div>
         )}

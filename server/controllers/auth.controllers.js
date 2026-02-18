@@ -2,6 +2,9 @@ import jwt from "jsonwebtoken";
 import { getCookieOptions, matchPassword } from "../utils/auth.utilities.js";
 import Admin from "../models/Admin.js";
 import { hashPassword } from "../utils/auth.utilities.js";
+import TestUser from "../models/TestUser.js";
+import TestUserActivity from "../models/TestUserActivity.js";
+import { verifyGoogleIdentity } from "../utils/googleAuth.js";
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -18,7 +21,7 @@ export async function handleLogin(req, res) {
     const admin = await Admin.findOne({ username: username });
     if(!admin) return res.status(401).json({success: false,message: 'Invalid Credentials'})
     const hashedPassword = admin.password;
-    const isMatched = matchPassword(password, hashedPassword);
+    const isMatched = await matchPassword(password, hashedPassword);
     if (!isMatched)
       return res.status(401).json({
         success: false,
@@ -76,5 +79,72 @@ export async function handleRegister(req, res) {
   } catch (error) {
     console.log("Error while Registeering : ", error.message);
     return res.status(500).json({ message: "Internal Server" });
+  }
+}
+
+export async function handleTestGoogleAuth(req, res) {
+  try {
+    const idToken = String(req.body?.idToken || "").trim();
+    if (!idToken) {
+      return res.status(400).json({ success: false, message: "Google token is required" });
+    }
+
+    const identity = await verifyGoogleIdentity(idToken);
+    if (!identity) {
+      return res.status(401).json({ success: false, message: "Invalid Google token" });
+    }
+
+    const now = new Date();
+    const testUser = await TestUser.findOneAndUpdate(
+      { googleSub: identity.sub },
+      {
+        $set: {
+          email: identity.email,
+          name: identity.name || "",
+          picture: identity.picture || "",
+          lastLoginAt: now,
+        },
+        $setOnInsert: {
+          createdAt: now,
+        },
+      },
+      {
+        upsert: true,
+        new: true,
+      },
+    );
+
+    const token = jwt.sign(
+      {
+        sub: identity.email,
+        role: "test_user",
+        testUserId: String(testUser._id),
+        email: identity.email,
+        name: identity.name || "",
+        picture: identity.picture || "",
+      },
+      process.env.JWT_SECRET_KEY,
+      { expiresIn: "1h" },
+    );
+
+    res.cookie("token", token, getCookieOptions());
+
+    await TestUserActivity.create({
+      testUserId: testUser._id,
+      email: identity.email,
+      action: "auth.login",
+      metadata: {
+        provider: "google",
+      },
+      createdAt: now,
+    });
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.log("Error while Google test login:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
   }
 }

@@ -100,6 +100,13 @@ const FormSchema = new mongoose.Schema({
   settings: FormSettingsSchema,
   isPublished: { type: Boolean, default: false },
   responseCount: { type: Number, default: 0 },
+  isTestUserForm: { type: Boolean, default: false, index: true },
+  owner: {
+    role: { type: String, enum: ["admin", "test_user"], default: "admin" },
+    adminUsername: { type: String, default: null },
+    testUserId: { type: mongoose.Schema.Types.ObjectId, ref: "TestUser", default: null },
+    email: { type: String, default: null },
+  },
 });
 
 FormSchema.pre("save", function () {

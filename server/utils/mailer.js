@@ -93,8 +93,76 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function sanitizeUrl(value) {
+  if (/^(https?:\/\/|mailto:)/i.test(value)) return value;
+  return "#";
+}
+
+function renderInlineMarkdown(value) {
+  return value
+    .replace(
+      /\[([^\]]+)\]\(([^)\s]+)\)/g,
+      (_, text, href) =>
+        `<a href="${sanitizeUrl(href)}" target="_blank" rel="noopener noreferrer" style="color:#0891b2;text-decoration:underline;">${text}</a>`,
+    )
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([^*]+)\*/g, "<em>$1</em>")
+    .replace(/~~([^~]+)~~/g, "<s>$1</s>");
+}
+
+function renderMarkdownToEmailHtml(value) {
+  const lines = escapeHtml(value || "").split(/\r?\n/);
+  const output = [];
+  let inUl = false;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+
+    if (!line) {
+      if (inUl) {
+        output.push("</ul>");
+        inUl = false;
+      }
+      continue;
+    }
+
+    const heading = line.match(/^(#{1,6})\s+(.+)$/);
+    if (heading) {
+      if (inUl) {
+        output.push("</ul>");
+        inUl = false;
+      }
+      const level = heading[1].length;
+      output.push(`<h${level}>${renderInlineMarkdown(heading[2])}</h${level}>`);
+      continue;
+    }
+
+    const listItem = line.match(/^[-*]\s+(.+)$/);
+    if (listItem) {
+      if (!inUl) {
+        output.push("<ul>");
+        inUl = true;
+      }
+      output.push(`<li>${renderInlineMarkdown(listItem[1])}</li>`);
+      continue;
+    }
+
+    if (inUl) {
+      output.push("</ul>");
+      inUl = false;
+    }
+
+    output.push(`<p>${renderInlineMarkdown(line)}</p>`);
+  }
+
+  if (inUl) output.push("</ul>");
+  return output.join("");
+}
+
 export async function sendSubmissionReceipt({
   to,
+  name,
   formTitle,
   submittedAt,
   subjectTemplate,
@@ -106,6 +174,7 @@ export async function sendSubmissionReceipt({
   if (!fromEmail) return { sent: false, reason: "missing_sender_email" };
 
   const tokens = {
+    name: name || String(to).split("@")[0],
     email: to,
     formTitle: formTitle || "Form",
     submittedAt: formatSubmittedAt(submittedAt),
@@ -118,13 +187,11 @@ export async function sendSubmissionReceipt({
 
   const text = applyTemplate(
     messageTemplate ||
-      'Hi {{email}},\n\nThank you for completing "{{formTitle}}". We have recorded your submission on {{submittedAt}}.',
+      'Hi {{name}},\n\nThank you for completing "{{formTitle}}". We have recorded your submission on {{submittedAt}}.',
     tokens,
   );
 
-  const html = `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827;">${escapeHtml(
-    text,
-  ).replaceAll("\n", "<br/>")}</div>`;
+  const html = `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827;">${renderMarkdownToEmailHtml(text)}</div>`;
 
   if (smtpMailer) {
     await smtpMailer.sendMail({
@@ -148,7 +215,6 @@ export async function sendSubmissionReceipt({
     });
     return { sent: true, provider: "mailtrap" };
   }
-
   return { sent: false, reason: "missing_mailer_config" };
 }
 

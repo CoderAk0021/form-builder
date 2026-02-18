@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader, Trash2 } from "lucide-react";
 import {
   AlertDialog,
@@ -12,12 +12,27 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardWorkspace } from "@/components/dashboard/DashboardWorkspace";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useForms } from "@/hooks/useForms";
 import type { Form } from "@/types/form";
 import { DEFAULT_FORM } from "@/types/form";
 import { generateId } from "@/utils/id";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { useAuth } from "@/context/auth";
+import { formsApi, type TestUserActivity } from "@/api";
+import {
+  ADMIN_DASHBOARD_SCOPE,
+  DASHBOARD_SCOPE_PARAM,
+  filterFormsByDashboardScope,
+  normalizeDashboardScope,
+} from "@/lib/dashboard-scope";
 
 interface DashboardProps {
   onEditForm: (form: Form) => void;
@@ -25,18 +40,112 @@ interface DashboardProps {
 
 export  function Dashboard({ onEditForm }: DashboardProps) {
   const { forms, loading, createForm, deleteForm } = useForms();
+  const { user } = useAuth();
   const activeTab = "forms";
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [formToDelete, setFormToDelete] = useState<string | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [activities, setActivities] = useState<TestUserActivity[]>([]);
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isAdmin = user?.role === "admin";
+  const isTestUser = user?.role === "test_user";
+  const selectedDashboard = normalizeDashboardScope(
+    searchParams.get(DASHBOARD_SCOPE_PARAM),
+  );
+  const hasReachedTestUserFormLimit = isTestUser && forms.length >= 1;
+  const dashboardScopeSearch = location.search || "";
 
-  const filteredForms = forms.filter((form) =>
+  const dashboardOptions = useMemo(() => {
+    if (!isAdmin) return [];
+
+    const optionMap = new Map<string, { value: string; label: string }>();
+
+    forms.forEach((form) => {
+      const ownerTestUserId = form.owner?.testUserId;
+      if (ownerTestUserId) {
+        const email = form.owner?.email || ownerTestUserId;
+        optionMap.set(`test:${ownerTestUserId}`, {
+          value: `test:${ownerTestUserId}`,
+          label: email,
+        });
+      }
+    });
+
+    activities.forEach((activity) => {
+      if (activity.testUserId) {
+        optionMap.set(`test:${activity.testUserId}`, {
+          value: `test:${activity.testUserId}`,
+          label: activity.email || activity.testUserId,
+        });
+      }
+    });
+
+    if (
+      selectedDashboard.startsWith("test:") &&
+      !optionMap.has(selectedDashboard)
+    ) {
+      const fallbackId = selectedDashboard.replace("test:", "");
+      optionMap.set(selectedDashboard, {
+        value: selectedDashboard,
+        label: `Selected test user (${fallbackId.slice(0, 8)})`,
+      });
+    }
+
+    return [
+      { value: ADMIN_DASHBOARD_SCOPE, label: "Admin Dashboard" },
+      ...Array.from(optionMap.values()).sort((a, b) =>
+        a.label.localeCompare(b.label),
+      ),
+    ];
+  }, [activities, forms, isAdmin, selectedDashboard]);
+
+  const setSelectedDashboard = (nextScope: string) => {
+    const normalizedScope = normalizeDashboardScope(nextScope);
+    const nextSearch = new URLSearchParams(searchParams);
+    if (normalizedScope === ADMIN_DASHBOARD_SCOPE || !isAdmin) {
+      nextSearch.delete(DASHBOARD_SCOPE_PARAM);
+    } else {
+      nextSearch.set(DASHBOARD_SCOPE_PARAM, normalizedScope);
+    }
+    setSearchParams(nextSearch, { replace: true });
+  };
+
+  useEffect(() => {
+    if (!isAdmin) {
+      if (selectedDashboard !== ADMIN_DASHBOARD_SCOPE) {
+        setSelectedDashboard(ADMIN_DASHBOARD_SCOPE);
+      }
+    }
+  }, [isAdmin, selectedDashboard]);
+
+  const scopedForms = useMemo(() => {
+    return filterFormsByDashboardScope(forms, isAdmin, selectedDashboard);
+  }, [forms, isAdmin, selectedDashboard]);
+
+  const filteredForms = scopedForms.filter((form) =>
     form.title.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
+  const isViewingTestUserDashboard =
+    isAdmin && selectedDashboard.startsWith("test:");
+  const disableCreate =
+    hasReachedTestUserFormLimit || isViewingTestUserDashboard;
+  const selectedDashboardLabel =
+    dashboardOptions.find((option) => option.value === selectedDashboard)
+      ?.label || null;
+
   const handleCreateForm = async () => {
+    if (isViewingTestUserDashboard) {
+      toast.error("Switch to Admin Dashboard to create admin forms");
+      return;
+    }
+    if (hasReachedTestUserFormLimit) {
+      toast.error("Test users can create only one form");
+      return;
+    }
     const newForm = {
       ...DEFAULT_FORM,
       id: generateId(),
@@ -51,6 +160,14 @@ export  function Dashboard({ onEditForm }: DashboardProps) {
   };
 
   const handleCreateFromTemplate = async (templateName: string) => {
+    if (isViewingTestUserDashboard) {
+      toast.error("Switch to Admin Dashboard to create admin forms");
+      return;
+    }
+    if (hasReachedTestUserFormLimit) {
+      toast.error("Test users can create only one form");
+      return;
+    }
     const templates: Record<string, Partial<Form>> = {
       "Event Registration": {
         title: "Event Registration",
@@ -144,6 +261,10 @@ export  function Dashboard({ onEditForm }: DashboardProps) {
     };
 
     const template = templates[templateName];
+    if (isTestUser && template?.questions?.some((question) => question.type === "file_upload")) {
+      toast.error("Test users cannot use templates with file upload fields");
+      return;
+    }
     if (template) {
       const newForm = {
         ...DEFAULT_FORM,
@@ -159,6 +280,18 @@ export  function Dashboard({ onEditForm }: DashboardProps) {
     }
     setShowTemplates(false);
   };
+
+  useEffect(() => {
+    void (async () => {
+      if (user?.role !== "admin") return;
+      try {
+        const data = await formsApi.getTestUserActivities();
+        setActivities(data);
+      } catch {
+        setActivities([]);
+      }
+    })();
+  }, [user?.role]);
 
   const handleDelete = async () => {
     if (formToDelete) {
@@ -187,19 +320,49 @@ export  function Dashboard({ onEditForm }: DashboardProps) {
         onShowTemplatesChange={setShowTemplates}
         onCreateBlankForm={handleCreateForm}
         onCreateFromTemplate={handleCreateFromTemplate}
+        disableCreate={disableCreate}
       />
+      {isAdmin && (
+        <div className="mb-4 rounded-lg border border-zinc-800 bg-zinc-900/40 px-4 py-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs uppercase tracking-wide text-zinc-500">
+              Dashboard view
+            </p>
+            <Select
+              value={selectedDashboard}
+              onValueChange={setSelectedDashboard}
+            >
+              <SelectTrigger className="h-9 w-full border-zinc-700 bg-zinc-950 text-zinc-100 sm:w-[320px]">
+                <SelectValue placeholder="Select dashboard scope" />
+              </SelectTrigger>
+              <SelectContent className="border-zinc-700 bg-zinc-950 text-zinc-100">
+                {dashboardOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {isViewingTestUserDashboard && selectedDashboardLabel && (
+            <p className="mt-2 text-xs text-zinc-500">
+              Viewing test user dashboard for {selectedDashboardLabel}
+            </p>
+          )}
+        </div>
+      )}
 
       <DashboardWorkspace
-        forms={forms}
+        forms={scopedForms}
         filteredForms={filteredForms}
         activeTab={activeTab}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         onCreateClick={() => setShowTemplates(true)}
         onEditForm={onEditForm}
-        onViewResponses={(form) =>
-          navigate(`/form/${form.id || form._id}/responses`)
-        }
+        onViewResponses={(form) => {
+          navigate(`/form/${form.id || form._id}/responses${dashboardScopeSearch}`);
+        }}
         onDeleteForm={(formId) => setFormToDelete(formId)}
         onShareForm={async (form) => {
           const link = `${window.location.origin}/form/${form.id || form._id}`;
@@ -210,6 +373,22 @@ export  function Dashboard({ onEditForm }: DashboardProps) {
             toast.error("Unable to copy form link");
           }
         }}
+        activities={isViewingTestUserDashboard ? [] : activities}
+        disableCreate={disableCreate}
+        dashboardTitle={
+          isViewingTestUserDashboard
+            ? "Test User Dashboard"
+            : isAdmin
+            ? "Admin Dashboard"
+            : "Test User Dashboard"
+        }
+        dashboardDescription={
+          isViewingTestUserDashboard
+            ? "Review this test user's forms and response activity."
+            : isAdmin
+            ? "Manage admin forms and monitor test user activity."
+            : "Manage your test user form with restricted features."
+        }
       />
 
       <AlertDialog
