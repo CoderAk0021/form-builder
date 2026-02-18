@@ -178,6 +178,12 @@ export function FormPreview({
   return (
     <div className={previewShellClass}>
       <form onSubmit={handleSubmit} className="relative space-y-6">
+        {(form.isTestUserForm || form.owner?.role === "test_user") && (
+          <div className="pointer-events-none absolute right-3 top-3 z-30 rounded border border-amber-800/60 bg-amber-950/60 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-amber-300">
+            POWERED BY EASYFORMS
+          </div>
+        )}
+
         <PreviewHeader
           form={form}
           activePageIndex={activePageIndex}

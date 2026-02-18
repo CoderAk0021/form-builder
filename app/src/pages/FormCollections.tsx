@@ -1,10 +1,16 @@
 import { useMemo, useState } from "react";
 import type { ComponentType } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { FileText, Loader, MessageSquareText, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useForms } from "@/hooks/useForms";
 import type { Form } from "@/types/form";
+import { useAuth } from "@/context/auth";
+import {
+  DASHBOARD_SCOPE_PARAM,
+  filterFormsByDashboardScope,
+  normalizeDashboardScope,
+} from "@/lib/dashboard-scope";
 
 function FormCollectionLayout({
   title,
@@ -94,17 +100,30 @@ function FormCollectionLayout({
 
 export function EditorFormsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const { user } = useAuth();
   const { forms, loading } = useForms();
+  const isAdmin = user?.role === "admin";
+  const selectedScope = normalizeDashboardScope(
+    searchParams.get(DASHBOARD_SCOPE_PARAM),
+  );
+  const scopedForms = useMemo(
+    () => filterFormsByDashboardScope(forms, isAdmin, selectedScope),
+    [forms, isAdmin, selectedScope],
+  );
 
   return (
     <FormCollectionLayout
       title="Editor"
       description="Pick a form to open in editor mode."
       icon={FileText}
-      forms={forms}
+      forms={scopedForms}
       loading={loading}
       onOpen={(form) => {
-        navigate(`/editor/${form.id || form._id}`, { state: { form } });
+        navigate(`/editor/${form.id || form._id}${location.search || ""}`, {
+          state: { form },
+        });
       }}
     />
   );
@@ -112,17 +131,28 @@ export function EditorFormsPage() {
 
 export function ResponsesFormsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const { user } = useAuth();
   const { forms, loading } = useForms();
+  const isAdmin = user?.role === "admin";
+  const selectedScope = normalizeDashboardScope(
+    searchParams.get(DASHBOARD_SCOPE_PARAM),
+  );
+  const scopedForms = useMemo(
+    () => filterFormsByDashboardScope(forms, isAdmin, selectedScope),
+    [forms, isAdmin, selectedScope],
+  );
 
   return (
     <FormCollectionLayout
       title="Responses"
       description="Pick a form to view response analytics."
       icon={MessageSquareText}
-      forms={forms}
+      forms={scopedForms}
       loading={loading}
       onOpen={(form) => {
-        navigate(`/form/${form.id || form._id}/responses`);
+        navigate(`/form/${form.id || form._id}/responses${location.search || ""}`);
       }}
     />
   );

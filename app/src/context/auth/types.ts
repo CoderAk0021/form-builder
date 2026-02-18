@@ -11,6 +11,7 @@ export interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
+  loginAsTestUserWithGoogle: (idToken: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<boolean>;
 }

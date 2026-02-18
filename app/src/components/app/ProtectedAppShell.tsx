@@ -4,6 +4,11 @@ import type { ComponentType } from "react";
 import Logo from "@/components/ui/Logo";
 import { useAuth } from "@/context/auth";
 import { Button } from "@/components/ui/button";
+import {
+  ADMIN_DASHBOARD_SCOPE,
+  DASHBOARD_SCOPE_PARAM,
+  normalizeDashboardScope,
+} from "@/lib/dashboard-scope";
 
 type NavTab = {
   key: "dashboard" | "editor" | "responses";
@@ -19,6 +24,16 @@ const segmentStyles =
 export default function ProtectedAppShell() {
   const location = useLocation();
   const { user, logout } = useAuth();
+  const isAdmin = user?.role === "admin";
+  const scope = normalizeDashboardScope(
+    new URLSearchParams(location.search).get(DASHBOARD_SCOPE_PARAM),
+  );
+  const scopeQuery =
+    isAdmin && scope !== ADMIN_DASHBOARD_SCOPE
+      ? `?${DASHBOARD_SCOPE_PARAM}=${encodeURIComponent(scope)}`
+      : "";
+
+  const withScope = (path: string) => `${path}${scopeQuery}`;
 
   const dashboardMatch = matchPath("/dashboard", location.pathname);
   const editorRootMatch = matchPath("/editor", location.pathname);
@@ -41,45 +56,45 @@ export default function ProtectedAppShell() {
       key: "dashboard",
       label: "Dashboard",
       icon: LayoutDashboard,
-      to: "/dashboard",
+      to: withScope("/dashboard"),
       active: activeKey === "dashboard",
     },
     {
       key: "editor",
       label: "Editor",
       icon: FileText,
-      to: "/editor",
+      to: withScope("/editor"),
       active: activeKey === "editor",
     },
     {
       key: "responses",
       label: "Responses",
       icon: MessageSquareText,
-      to: "/responses",
+      to: withScope("/responses"),
       active: activeKey === "responses",
     },
   ];
 
-  const breadcrumbs = [{ label: "Home", to: "/dashboard" }];
+  const breadcrumbs = [{ label: "Home", to: withScope("/dashboard") }];
 
   if (editorMatch?.params.formId) {
-    breadcrumbs.push({ label: "Editor", to: "/editor" });
+    breadcrumbs.push({ label: "Editor", to: withScope("/editor") });
     breadcrumbs.push({
       label: editorMatch.params.formId,
-      to: `/editor/${editorMatch.params.formId}`,
+      to: withScope(`/editor/${editorMatch.params.formId}`),
     });
   } else if (editorRootMatch) {
-    breadcrumbs.push({ label: "Editor", to: "/editor" });
+    breadcrumbs.push({ label: "Editor", to: withScope("/editor") });
   } else if (responsesMatch?.params.id) {
-    breadcrumbs.push({ label: "Responses", to: "/responses" });
+    breadcrumbs.push({ label: "Responses", to: withScope("/responses") });
     breadcrumbs.push({
       label: responsesMatch.params.id,
-      to: `/form/${responsesMatch.params.id}/responses`,
+      to: withScope(`/form/${responsesMatch.params.id}/responses`),
     });
   } else if (responsesRootMatch) {
-    breadcrumbs.push({ label: "Responses", to: "/responses" });
+    breadcrumbs.push({ label: "Responses", to: withScope("/responses") });
   } else if (dashboardMatch) {
-    breadcrumbs.push({ label: "Dashboard", to: "/dashboard" });
+    breadcrumbs.push({ label: "Dashboard", to: withScope("/dashboard") });
   }
 
   return (
@@ -87,7 +102,7 @@ export default function ProtectedAppShell() {
       <header className="sticky top-0 z-40 border-b border-zinc-800 bg-[#000000]/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1400px] flex-col gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-4">
-            <Link to="/dashboard" className="flex items-center gap-3">
+            <Link to={withScope("/dashboard")} className="flex items-center gap-3">
               <div className="h-8 w-8">
                 <Logo size={30}/>
               </div>
@@ -98,7 +113,17 @@ export default function ProtectedAppShell() {
             </Link>
 
             <div className="flex items-center gap-2">
-              <span className={segmentStyles}>{user?.sub?.split('@')[0] || "admin"}</span>
+              {user?.role === "test_user" && user?.picture ? (
+                <div className="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-zinc-700 bg-zinc-900/70">
+                  <img
+                    src={user.picture}
+                    alt={user.name || user.email || "Test user"}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              ) : (
+                <span className={segmentStyles}>{user?.sub?.split("@")[0] || "admin"}</span>
+              )}
               <Button
                 variant="outline"
                 onClick={() => {

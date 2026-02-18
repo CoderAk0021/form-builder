@@ -3,6 +3,7 @@ import { LoginPage } from "@/pages/LoginPage";
 import { PublicForm } from "@/pages/PublicForm";
 import { Dashboard } from "@/pages/Dashboard";
 import { LandingPage } from "@/pages/LandingPage";
+import { TestUserSignupPage } from "@/pages/TestUserSignupPage";
 import ProtectedRoute from "./ProtectedRoute";
 import { FormResponses } from "@/pages/FormResponses";
 import EditorWrapper from "./EditorWrapper";
@@ -23,6 +24,7 @@ export default function AppRoutes() {
         
         {/* 1. Login Page */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/test-signup" element={<TestUserSignupPage />} />
 
         {/* 2. Public Form View (Must be public so respondents can access) */}
         <Route path="/form/:formId" element={<PublicForm />} />
@@ -38,7 +40,7 @@ export default function AppRoutes() {
               element={
                 <Dashboard
                   onEditForm={(form) =>
-                    navigate(`/editor/${form.id}`, { state: { form } })
+                    navigate(`/editor/${form.id}${location.search || ""}`, { state: { form } })
                   }
                 />
               }
@@ -52,7 +54,7 @@ export default function AppRoutes() {
             <Route
               path="/editor/:formId"
               element={
-                <EditorWrapper onBack={() => navigate('/editor')} />
+                <EditorWrapper onBack={() => navigate(`/editor${location.search || ""}`)} />
               }
             />
 

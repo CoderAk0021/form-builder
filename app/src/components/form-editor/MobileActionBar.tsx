@@ -14,6 +14,7 @@ import type { Form, QuestionType } from "@/types/form";
 
 interface MobileActionBarProps {
   form: Form;
+  isTestUser: boolean;
   onAddQuestion: (type: QuestionType) => void;
   onUpdateSettings: (updates: Partial<Form["settings"]>) => void;
   onUploadThemeAsset: (
@@ -25,6 +26,7 @@ interface MobileActionBarProps {
 
 export const MobileActionBar = ({
   form,
+  isTestUser,
   onAddQuestion,
   onUpdateSettings,
   onUploadThemeAsset,
@@ -55,6 +57,8 @@ export const MobileActionBar = ({
 
             <div className="flex-1 overflow-y-auto">
               <QuestionTypesPanel
+                disabledTypes={isTestUser ? ["file_upload"] : []}
+                disabledReason="Test users cannot use file upload fields"
                 onAddQuestion={(type) => {
                   onAddQuestion(type);
                   setShowMobileAdd(false);
@@ -77,6 +81,7 @@ export const MobileActionBar = ({
         </SheetTrigger>
         <SheetContent
           side="right"
+          onOpenAutoFocus={(event) => event.preventDefault()}
           className="w-[70%] px-5 pb-5 sm:w-[400px] bg-zinc-950 border-white/10"
         >
           <SheetHeader>
@@ -89,6 +94,7 @@ export const MobileActionBar = ({
           <div className="overflow-auto">
             <SettingsContent
               form={form}
+              isTestUser={isTestUser}
               onUpdateSettings={onUpdateSettings}
               onUploadThemeAsset={onUploadThemeAsset}
               isThemeAssetUploading={isThemeAssetUploading}

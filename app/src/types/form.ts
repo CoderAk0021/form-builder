@@ -44,6 +44,13 @@ export interface Form {
   settings: FormSettings;
   isPublished: boolean;
   responseCount: number;
+  isTestUserForm?: boolean;
+  owner?: {
+    role?: "admin" | "test_user" | string;
+    adminUsername?: string | null;
+    testUserId?: string | null;
+    email?: string | null;
+  };
 }
 
 export interface FormSettings {
@@ -169,7 +176,7 @@ export const DEFAULT_FORM: Form = {
       enabled: false,
       subject: 'Your response to {{formTitle}} was received',
       message:
-        'Hi {{email}},\n\nThank you for completing "{{formTitle}}". We have recorded your submission on {{submittedAt}}.',
+        'Hi {{name}},\n\nThank you for completing "{{formTitle}}". We have recorded your submission on {{submittedAt}}.',
     },
     theme: {
       primaryColor: '#7c3aed',

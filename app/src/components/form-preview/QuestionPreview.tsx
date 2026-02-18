@@ -198,7 +198,7 @@ export function QuestionPreview({
 
         {question.type === "dropdown" && (
           <Select value={selectValue} onValueChange={onChange}>
-            <SelectTrigger className="h-10 rounded-md border-white/10 bg-zinc-950/80 text-zinc-100">
+            <SelectTrigger className="h-10 w-full rounded-md border-white/10 bg-zinc-950/80 text-zinc-100">
               <SelectValue placeholder="Select an option" />
             </SelectTrigger>
             <SelectContent className="rounded-md border-white/10 bg-zinc-950 text-zinc-100">

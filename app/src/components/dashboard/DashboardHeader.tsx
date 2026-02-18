@@ -17,6 +17,7 @@ interface DashboardHeaderProps {
   onShowTemplatesChange: (open: boolean) => void;
   onCreateBlankForm: () => Promise<void>;
   onCreateFromTemplate: (name: string) => Promise<void>;
+  disableCreate?: boolean;
 }
 
 const templateOptions: Array<{
@@ -48,6 +49,7 @@ export function DashboardHeader({
   onShowTemplatesChange,
   onCreateBlankForm,
   onCreateFromTemplate,
+  disableCreate = false,
 }: DashboardHeaderProps) {
   return (
     <header className="mb-4 rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-3">
@@ -64,7 +66,10 @@ export function DashboardHeader({
 
         <Dialog open={showTemplates} onOpenChange={onShowTemplatesChange}>
           <DialogTrigger asChild>
-            <Button className="h-9 rounded-md bg-zinc-100 px-3 text-zinc-900 hover:bg-zinc-200">
+            <Button
+              disabled={disableCreate}
+              className="h-9 rounded-md bg-zinc-100 px-3 text-zinc-900 hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+            >
               <Plus className="h-4 w-4" />
               New Form
             </Button>

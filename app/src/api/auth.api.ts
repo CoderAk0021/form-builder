@@ -9,6 +9,13 @@ export const authApi = {
     });
   },
 
+  loginAsTestUserWithGoogle: async (idToken: string) => {
+    return apiRequest<AuthLoginResponse>("/auth/test/google", {
+      method: "POST",
+      body: JSON.stringify({ idToken }),
+    });
+  },
+
   verify: async () => {
     return apiRequest<AuthVerifyResponse>("/auth/verify");
   },

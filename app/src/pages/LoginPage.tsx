@@ -100,6 +100,10 @@ export function LoginPage() {
               )}
             </button>
           </form>
+
+          <p className="mt-5 text-xs text-zinc-500">
+            This page is for admin sign-in only.
+          </p>
         </div>
       </div>
     </div>
