@@ -14,6 +14,7 @@ import {
   handleCheckStatus,
   handleGetPublicForm,
   handleGetMailStatus,
+  handleGetTestUserActivities,
 } from "../controllers/form.controllers.js";
 
 const router = express.Router();
@@ -22,6 +23,7 @@ const router = express.Router();
 // Get all forms
 router.get("/", checkCookies, handleGetAllForms);
 router.get("/mail/status", checkCookies, handleGetMailStatus);
+router.get("/test-users/activities", checkCookies, handleGetTestUserActivities);
 
 // Get a public form published
 router.get("/public/:id", handleGetPublicForm);

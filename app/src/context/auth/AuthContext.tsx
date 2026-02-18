@@ -43,6 +43,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [refreshSession],
   );
 
+  const loginAsTestUserWithGoogle = useCallback(
+    async (idToken: string) => {
+      const response = await authApi.loginAsTestUserWithGoogle(idToken);
+      if (!response.success) {
+        throw new Error(response.message || "Google login failed");
+      }
+      await refreshSession();
+    },
+    [refreshSession],
+  );
+
   const logout = useCallback(async () => {
     try {
       await authApi.logout();
@@ -60,10 +71,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isAuthenticated: Boolean(user),
       isLoading,
       login,
+      loginAsTestUserWithGoogle,
       logout,
       refreshSession,
     }),
-    [isLoading, login, logout, refreshSession, user],
+    [isLoading, login, loginAsTestUserWithGoogle, logout, refreshSession, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

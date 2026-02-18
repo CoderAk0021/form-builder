@@ -49,6 +49,7 @@ import { FormPreview } from "@/components/form-preview";
 import { MobileActionBar, SettingsContent } from "@/components/form-editor";
 import { useForms } from "@/hooks/useForms";
 import { uploadFile } from "@/api";
+import { useAuth } from "@/context/auth";
 import type { Form, Question, QuestionType } from "@/types/form";
 import { DEFAULT_QUESTION } from "@/types/form";
 import { generateId } from "@/utils/id";
@@ -161,6 +162,8 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
     "mobile",
   );
   const { updateForm } = useForms();
+  const { user } = useAuth();
+  const isTestUser = user?.role === "test_user";
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -192,6 +195,10 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
   }, []);
 
   const handleAddQuestion = useCallback((type: QuestionType) => {
+    if (isTestUser && type === "file_upload") {
+      toast.error("Test users cannot add file upload fields");
+      return;
+    }
     const questionId = generateId();
     setForm((prev) => {
       const sectionCount = prev.questions.filter(
@@ -216,7 +223,7 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
     });
     setActiveQuestionId(questionId);
     toast.success("Question added");
-  }, []);
+  }, [isTestUser]);
 
   const handleUpdateQuestion = useCallback(
     (questionId: string, updates: Partial<Question>) => {
@@ -278,6 +285,10 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
 
   const handleUploadThemeAsset = useCallback(
     async (target: "logoUrl" | "bannerUrl", file: File) => {
+      if (isTestUser) {
+        toast.error("Test users cannot upload branding assets");
+        return;
+      }
       if (isThemeAssetUploading) return;
       setIsThemeAssetUploading(true);
       try {
@@ -316,7 +327,7 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
         setIsThemeAssetUploading(false);
       }
     },
-    [isThemeAssetUploading],
+    [isThemeAssetUploading, isTestUser],
   );
 
   const handleSave = useCallback(async () => {
@@ -324,7 +335,26 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
     setIsSaving(true);
     try {
       const formId = form._id || form.id;
-      await updateForm(formId, form);
+      const nextForm = isTestUser
+        ? {
+            ...form,
+            settings: {
+              ...form.settings,
+              emailNotification: {
+                ...form.settings.emailNotification,
+                enabled: false,
+              },
+              theme: {
+                ...form.settings.theme,
+                logoUrl: "/logo.svg",
+                bannerUrl: "/default-banner.svg",
+                backgroundImageUrl: "/default-banner.svg",
+              },
+            },
+          }
+        : form;
+
+      await updateForm(formId, nextForm);
       toast.success("Form saved successfully");
       onBack();
     } catch {
@@ -332,7 +362,7 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
     } finally {
       setIsSaving(false);
     }
-  }, [form, updateForm, onBack, isSaving]);
+  }, [form, updateForm, onBack, isSaving, isTestUser]);
 
   const shareUrl = `${window.location.origin}/form/${form._id || form.id}`;
 
@@ -647,6 +677,7 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
             {/* Mobile Action Bar */}
             <MobileActionBar
               form={form}
+              isTestUser={isTestUser}
               onAddQuestion={handleAddQuestion}
               onUpdateSettings={handleUpdateSettings}
               onUploadThemeAsset={handleUploadThemeAsset}
@@ -660,7 +691,11 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
                   <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4 px-2">
                     Add Questions
                   </h3>
-                  <QuestionTypesPanel onAddQuestion={handleAddQuestion} />
+                  <QuestionTypesPanel
+                    onAddQuestion={handleAddQuestion}
+                    disabledTypes={isTestUser ? ["file_upload"] : []}
+                    disabledReason="Test users cannot use file upload fields"
+                  />
                 </div>
 
                 <div className="bg-zinc-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-4">
@@ -802,6 +837,7 @@ export function FormEditor({ form: initialForm, onBack }: FormEditorProps) {
                   {/* FIX: Usage of component in Desktop Sidebar */}
                   <SettingsContent
                     form={form}
+                    isTestUser={isTestUser}
                     onUpdateSettings={handleUpdateSettings}
                     onUploadThemeAsset={handleUploadThemeAsset}
                     isThemeAssetUploading={isThemeAssetUploading}

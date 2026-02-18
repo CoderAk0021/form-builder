@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Download,
   FileText,
@@ -14,6 +14,12 @@ import {
 } from 'lucide-react';
 import { ApiError, formsApi } from '@/api';
 import type { Form, FormResponse, Question, Answer } from '@/types/form';
+import { useAuth } from '@/context/auth';
+import {
+  DASHBOARD_SCOPE_PARAM,
+  isFormInDashboardScope,
+  normalizeDashboardScope,
+} from '@/lib/dashboard-scope';
 
 type FormResponseRow = FormResponse & { respondentEmail?: string };
 
@@ -40,6 +46,16 @@ const formatDate = (dateString: string) => {
 export const FormResponses = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  const selectedScope = normalizeDashboardScope(
+    searchParams.get(DASHBOARD_SCOPE_PARAM),
+  );
+  const scopeSearch =
+    isAdmin && selectedScope.startsWith('test:')
+      ? `?${DASHBOARD_SCOPE_PARAM}=${encodeURIComponent(selectedScope)}`
+      : '';
 
   const [form, setForm] = useState<Form | null>(null);
   const [responses, setResponses] = useState<FormResponseRow[]>([]);
@@ -70,6 +86,13 @@ export const FormResponses = () => {
           formsApi.getResponses(id),
         ]);
 
+        if (!isFormInDashboardScope(formData, isAdmin, selectedScope)) {
+          setError('This form is outside the selected dashboard scope');
+          setForm(null);
+          setResponses([]);
+          return;
+        }
+
         setForm(formData);
         setResponses(responsesData);
       } catch (err: unknown) {
@@ -84,7 +107,7 @@ export const FormResponses = () => {
         setRefreshing(false);
       }
     },
-    [id, navigate],
+    [id, isAdmin, navigate, selectedScope],
   );
 
   useEffect(() => {
@@ -180,7 +203,7 @@ export const FormResponses = () => {
           <h2 className="text-lg font-semibold text-zinc-100">Failed to Load</h2>
           <p className="mt-2 text-sm text-zinc-400">{error}</p>
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate(`/dashboard${scopeSearch}`)}
             className="mt-5 rounded-md border border-zinc-700 bg-zinc-950 px-4 py-2 text-sm text-zinc-200 hover:bg-zinc-900"
           >
             Return to Dashboard

@@ -102,7 +102,7 @@ export function LandingPage() {
                 Checking...
               </>
             ) : (
-              "Sign In"
+              "Admin Sign In"
             )}
           </button>
         </header>
@@ -126,19 +126,16 @@ export function LandingPage() {
 
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                to="/dashboard"
-                className="inline-flex h-11 items-center gap-2 rounded-lg bg-zinc-100 px-5 text-sm font-medium text-zinc-950 transition hover:bg-zinc-200"
+                to="/test-signup"
+                className="inline-flex h-11 items-center gap-2 rounded-lg bg-zinc-100 px-5 text-sm font-medium text-zinc-950 transition hover:bg-zinc-600"
               >
-                Go to Dashboard
+                Start Testing as Test User
                 <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link
-                to="/editor"
-                className="inline-flex h-11 items-center rounded-lg border border-zinc-700 bg-zinc-900 px-5 text-sm font-medium text-zinc-200 transition hover:bg-zinc-800"
-              >
-                Open Builder
-              </Link>
             </div>
+            <p className="mt-3 text-xs text-zinc-500">
+              No setup needed. Sign up with Google and start testing immediately.
+            </p>
           </section>
 
           <section className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-5 shadow-2xl shadow-black/30 backdrop-blur sm:p-6">

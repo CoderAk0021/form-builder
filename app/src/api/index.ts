@@ -7,4 +7,5 @@ export type {
   AuthUser,
   AuthVerifyResponse,
   MailStatusResponse,
+  TestUserActivity,
 } from "./types";

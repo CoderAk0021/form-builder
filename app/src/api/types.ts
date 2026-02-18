@@ -1,6 +1,10 @@
 export interface AuthUser {
   sub: string;
-  role: string;
+  role: "admin" | "test_user" | string;
+  testUserId?: string;
+  email?: string;
+  name?: string;
+  picture?: string;
   iat: number;
   exp: number;
 }
@@ -25,4 +29,14 @@ export interface MailStatusResponse {
     smtpConfig: boolean;
     mailtrapToken: boolean;
   };
+}
+
+export interface TestUserActivity {
+  _id?: string;
+  testUserId: string;
+  email: string;
+  action: string;
+  formId?: string | null;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
 }
