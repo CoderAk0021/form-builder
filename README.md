@@ -19,7 +19,7 @@
 
 EasyForms is a **full-featured open-source form builder platform** that allows admins to create, publish, and manage dynamic forms with branding, analytics-ready storage,custom email sending, secure submission workflows and many more.
 
-This project is developed and maintained under the **ISTE Organization**.
+This project is developed and maintained under **ISTE BIT Sindri**.
 
 ---
 
@@ -85,7 +85,7 @@ This project is developed and maintained under the **ISTE Organization**.
 
 ## Live Demo
 
-🔗 **Easy Forms:** https://easyforms.istebits.com  
+ **[Easy Forms](https://easyforms.istebits.com)**  
 
 ---
 
@@ -100,7 +100,7 @@ We welcome contributions from the community and ISTE members.
 3. Commit using **Conventional Commits**
 4. Push and open a Pull Request
 
-See **[CONTRIBUTING.md](CONTRIBUTING.md)** for full guidelines.
+See **[contributing file](CONTRIBUTING.md)** for full guidelines.
 
 ---
 
@@ -116,7 +116,7 @@ fix/*       → bug fixes
 ---
 
 ## Maintainers
-Maintained under the **ISTE Organization**.
+Maintained under **ISTE BIT Sindri**.
 
 ---
 
@@ -132,7 +132,7 @@ Thanks to all contributors who help build EasyForms ❤️
 
 ## Acknowledgements
 
-* ISTE Organization
+* ISTE BIT Sindri
 * Open Source Community
 * React, Node.js, MongoDB contributors
 
@@ -149,8 +149,8 @@ See the [LICENSE](LICENSE) file for details.
 
 For queries :
 
-**[MAIL](mailto:dev.team@istebits.com)** |
-**[ISTE Official Website](istebits.com)**
+**[MAIL](mailto:istebitsbh01@gmail.com)** |
+**[ISTE BIT Sindri Website](https://istebits.com)**
 
 ---
 
