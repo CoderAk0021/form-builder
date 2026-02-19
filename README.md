@@ -24,22 +24,22 @@ This project is developed and maintained under the **ISTE Organization**.
 ---
 
 ##  Table of Contents
-- [Features](#-features)
-- [Tech Stack](#-tech-stack)
-- [Live Demo](#-live-demo)
-- [Installation & Setup](#installation--setup)
-- [Contributing](#-contributing)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Live Demo](#live-demo)
+- [Contributing](#contributing)
 - [Branching Strategy](#branching-strategy)
-- [Maintainers](#-maintainers)
-- [Contributors](#-contributors)
-- [License](#-license)
+- [Maintainers](#maintainers)
+- [Contributors](#contributors)
+- [Acknowledgements](#acknowledgements)
+- [License](#license)
 - [Contact](#contact)
 
 ---
 
-##  Features
+## Features
 
-###  Core Features (v1)
+### Core Features (v1)
 - Admin authentication (no public admin signup)
 - Create, update, delete, and fetch forms
 - Draft & published form states
@@ -52,7 +52,7 @@ This project is developed and maintained under the **ISTE Organization**.
 - Drag-and-drop question reordering
 - Google OAuth required before submission
 
-###  v2 Enhancements
+### v2 Enhancements
 - Test User (Using Google Auth)
 - Markdown-based form headers
 - Custom form banner image
@@ -64,7 +64,7 @@ This project is developed and maintained under the **ISTE Organization**.
 
 ---
 
-##  Tech Stack
+## Tech Stack
 
 ### Frontend
 - React + Vite  
@@ -83,79 +83,13 @@ This project is developed and maintained under the **ISTE Organization**.
 
 ---
 
-##  Live Demo
+## Live Demo
 
 🔗 **Easy Forms:** https://easyforms.istebits.com  
 
 ---
 
-##  Installation & Setup
-
-### 1️⃣ Clone Repository
-
-```bash
-git clone https://github.com/ISTEBITS/EasyForms.git
-cd EasyForms
-```
-
----
-
-### 2️⃣ Backend Setup (Server)
-
-```bash
-cd server
-npm install
-npm run dev
-```
-
-#### Create `.env` in `/server`
-
-```env
-
-PORT=3001
-MONGODB_URI=<your-mongodb-connection-string>
-CLOUDINARY_CLOUD_NAME=<your-cloud-name>
-CLOUDINARY_API_KEY=<your-api-key>
-CLOUDINARY_API_SECRET=<your-api-secret>
-CLIENT_ID=<your-google-client-id>
-
-// Mail (choose one provider mode)
-// Mode A: SMTP
-SMTP_HOST=<smtp-host>
-SMTP_PORT=587
-SMTP_USER=<smtp-username>
-SMTP_PASS=<smtp-password>
-SMTP_SECURE=false
-SMTP_FROM=<no-reply@your-domain.com>
-
-// Mode B: Mailtrap API token
-MAIL_TOKEN=<mailtrap-api-token>
-MAIL_FROM=<sandbox@example.com-or-verified-sender>
-MAIL_FROM_NAME=Form Builder
-MAILTRAP_USE_SANDBOX=true
-MAILTRAP_INBOX_ID=<mailtrap-inbox-id-for-sandbox>
-```
-
----
-
-### 3️⃣ Frontend Setup (Client)
-
-```bash
-cd client
-npm install
-npm run dev
-```
-
-#### Create `.env` in `/client`
-
-```env
-VITE_API_URL=http://localhost:5000
-VITE_CLIENT_ID=<your-google-client-id>
-```
-
----
-
-##  Contributing
+## Contributing
 
 We welcome contributions from the community and ISTE members.
 
@@ -166,11 +100,11 @@ We welcome contributions from the community and ISTE members.
 3. Commit using **Conventional Commits**
 4. Push and open a Pull Request
 
-See **CONTRIBUTING.md** for full guidelines.
+See **[CONTRIBUTING.md](CONTRIBUTING.md)** for full guidelines.
 
 ---
 
-##  Branching Strategy
+## Branching Strategy
 
 ```text
 main        → stable production
@@ -181,12 +115,12 @@ fix/*       → bug fixes
 
 ---
 
-##  Maintainers
+## Maintainers
 Maintained under the **ISTE Organization**.
 
 ---
 
-##  Contributors
+## Contributors
 
 Thanks to all contributors who help build EasyForms ❤️
 
@@ -196,7 +130,7 @@ Thanks to all contributors who help build EasyForms ❤️
 
 ---
 
-##  Acknowledgements
+## Acknowledgements
 
 * ISTE Organization
 * Open Source Community
@@ -204,14 +138,14 @@ Thanks to all contributors who help build EasyForms ❤️
 
 ---
 
-##  License
+## License
 
 This project is licensed under the **MIT License**.
 See the [LICENSE](LICENSE) file for details.
 
 ---
 
-##  Contact
+## Contact
 
 For queries :
 
@@ -220,6 +154,6 @@ For queries :
 
 ---
 
-##  Support the Project
+## Support the Project
 
 If you like EasyForms, please **star ⭐ the repository** and share it with the community!
