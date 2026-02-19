@@ -165,7 +165,7 @@ If you find a security vulnerability:
 - Do NOT open a public issue.
 - Email us privately at:
 
-- **REPORT HERE** - [security mail](mailto:dev.team@istebits.com)
+- **REPORT HERE** - [security mail](mailto:istebitsbh01@gmail.com)
 
 
 ###  Code of Conduct
