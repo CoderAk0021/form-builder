@@ -7,8 +7,8 @@ If you discover a security vulnerability, please **do not open a public GitHub i
 
 Instead, report it privately using one of the following methods:
 
-Email: **security@istebits.com**  
-Backup Contact: **iste.dev.team@istebits.com**
+Email: **istebitsbh01@gmail.com**  
+
 
 Please include:
 
